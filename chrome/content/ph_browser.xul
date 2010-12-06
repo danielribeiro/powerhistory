@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<overlay id="powerhistory-overlay"
+   xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+  <script type="application/javascript"
+          src="pwbrowser.js"/>
+  <menupopup id="menu_ToolsPopup">
+    <menuitem id="powerhistoryMenu" label="Power History"
+              oncommand="gBrowser.selectedTab = gBrowser.addTab('chrome://powerhistory/content/power_history.xul');"/>
+  </menupopup>
+</overlay>
