@@ -39,9 +39,6 @@
           ret.textContent = args;
           return ret;
         };
-        ret.addTo = function(id) {
-          return $(id).appendChild(ret);
-        };
         return ret;
       });
     })();
@@ -55,9 +52,7 @@
     return _addAllTo($(name), args);
   };
   PowerHistoryClass = function() {
-    this.searchbox = ui.textbox({
-      id: 'searchbox'
-    });
+    this.searchinput = ui.textbox();
     this.content = ui.treechildren();
     return this;
   };
@@ -66,17 +61,17 @@
     return window.openDialog("chrome://powerhistory/content/pwdialog.xul", "_blank", "chrome,all,dialog=no");
   };
   PowerHistoryClass.prototype.onLoad = function() {
+    var searchbox;
     dump('loaded');
-    ui.box({
-      id: 'pwbox',
+    searchbox = ui.box({
       align: 'center'
     }).add(ui.description({
       flex: '1'
-    }).text('My description'), this.searchbox, ui.button({
+    }).text('My description'), this.searchinput, ui.button({
       label: 'Search ',
       oncommand: "PowerHistory.init();"
-    })).addTo('pwwindow');
-    return this.createContent().addTo('pwwindow');
+    }));
+    return addTo('pwwindow', searchbox, this.createContent());
   };
   PowerHistoryClass.prototype.addToContent = function(row) {
     var _j, _len2, _ref2, i, newRow;
@@ -112,7 +107,7 @@
     var _ref2, _result, count, historyService, i, options, query, result, ret;
     historyService = Components.classes["@mozilla.org/browser/nav-history-service;1"].getService(Components.interfaces.nsINavHistoryService);
     query = historyService.getNewQuery();
-    query.searchTerms = this.searchbox.value;
+    query.searchTerms = this.searchinput.value;
     options = historyService.getNewQueryOptions();
     options.sortingMode = options.SORT_BY_VISITCOUNT_DESCENDING;
     options.maxResults = 10;
@@ -130,14 +125,11 @@
     return ret;
   };
   PowerHistoryClass.prototype.init = function() {
-    var _j, _len2, _ref2, _result, atr, i;
+    var _j, _len2, _ref2, _result, i;
     _result = []; _ref2 = this.showhistory();
     for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
       i = _ref2[_j];
-      _result.push((function() {
-        atr = getFrom(i, 'title', 'icon', 'uri', 'accessCount', 'time');
-        return this.addToContent(atr);
-      }).call(this));
+      _result.push(this.addToContent(getFrom(i, 'title', 'icon', 'uri', 'accessCount', 'time')));
     }
     return _result;
   };
