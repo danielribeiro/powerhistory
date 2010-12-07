@@ -13,7 +13,7 @@ class CoffeeCompiler
     args.push '-c', filename
     Open3.popen3 *args do |stdin, stdout, stderr|
       error_message = stderr.read
-      raise "CoffeeScript compile failed. #{error_message}" unless error_message.empty?
+      puts "CoffeeScript compile failed. #{error_message}" unless error_message.empty?
     end
 
   end
