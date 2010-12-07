@@ -1,8 +1,17 @@
 (function() {
-  var $, PowerHistory, _i, _len, _ref, _xul_list, ui;
-  var __hasProp = Object.prototype.hasOwnProperty;
+  var $, PowerHistory, _addAllTo, _i, _len, _ref, _xul_list, addTo, ui;
+  var __hasProp = Object.prototype.hasOwnProperty, __slice = Array.prototype.slice;
   ui = {};
   _xul_list = ['action', 'arrowscrollbox', 'assign', 'bbox', 'binding', 'bindings', 'box', 'broadcaster', 'broadcasterset', 'button', 'browser', 'checkbox', 'caption', 'colorpicker', 'column', 'columns', 'commandset', 'command', 'conditions', 'content', 'datepicker', 'deck', 'description', 'dialog', 'dialogheader', 'dropmarker', 'editor', 'grid', 'grippy', 'groupbox', 'hbox', 'iframe', 'image', 'key', 'keyset', 'label', 'listbox', 'listcell', 'listcol', 'listcols', 'listhead', 'listheader', 'listitem', 'member', 'menu', 'menubar', 'menuitem', 'menulist', 'menupopup', 'menuseparator', 'notification', 'notificationbox', 'observes', 'overlay', 'page', 'panel', 'param', 'popupset', 'preference', 'preferences', 'prefpane', 'prefwindow', 'progressmeter', 'query', 'queryset', 'radio', 'radiogroup', 'resizer', 'richlistbox', 'richlistitem', 'row', 'rows', 'rule', 'scale', 'script', 'scrollbar', 'scrollbox', 'scrollcorner', 'separator', 'spacer', 'spinbuttons', 'splitter', 'stack', 'statusbar', 'statusbarpanel', 'stringbundle', 'stringbundleset', 'tab', 'tabbrowser', 'tabbox', 'tabpanel', 'tabpanels', 'tabs', 'template', 'textnode', 'textbox', 'timepicker', 'titlebar', 'toolbar', 'toolbarbutton', 'toolbargrippy', 'toolbaritem', 'toolbarpalette', 'toolbarseparator', 'toolbarset', 'toolbarspacer', 'toolbarspring', 'toolbox', 'tooltip', 'tree', 'treecell', 'treechildren', 'treecol', 'treecols', 'treeitem', 'treerow', 'treeseparator', 'triple', 'vbox', 'where', 'window', 'wizard', 'wizardpage'];
+  _addAllTo = function(target, args) {
+    var _i, _len, _ref, i;
+    _ref = args;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      i = _ref[_i];
+      target.appendChild(i);
+    }
+    return target;
+  };
   _ref = _xul_list;
   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
     (function() {
@@ -18,14 +27,10 @@
             ret.setAttribute(k, v);
           }
         }
-        ret.add = function(args) {
-          var _j, _len2, _ref3, i;
-          _ref3 = args;
-          for (_j = 0, _len2 = _ref3.length; _j < _len2; _j++) {
-            i = _ref3[_j];
-            ret.appendChild(i);
-          }
-          return ret;
+        ret.add = function() {
+          var args;
+          args = __slice.call(arguments, 0);
+          return _addAllTo(ret, args);
         };
         ret.text = function(args) {
           if (!(typeof args !== "undefined" && args !== null)) {
@@ -34,12 +39,20 @@
           ret.textContent = args;
           return ret;
         };
+        ret.addTo = function(id) {
+          return $(id).appendChild(ret);
+        };
         return ret;
       });
     })();
   }
   $ = function(name) {
     return document.getElementById(name);
+  };
+  addTo = function(name) {
+    var args;
+    args = __slice.call(arguments, 1);
+    return _addAllTo($(name), args);
   };
   PowerHistory = {
     val: 0,
@@ -69,29 +82,26 @@
       return (result.root.containerOpen = false);
     },
     init: function() {
-      var b, i1, i2, menu, newone;
-      newone = ui.description().text("a content");
-      $("central").appendChild(newone);
-      b = ui.button({
+      var menu;
+      ui.description().text("a content").addTo('central');
+      menu = ui.menupopup().add(ui.menuitem({
+        label: 'item1'
+      }), ui.menuitem({
+        label: 'item2'
+      }));
+      return ui.button({
         type: 'menu',
         label: 'Cofmenu'
-      });
-      $('pwbox').appendChild(b);
-      menu = ui.menupopup();
-      i1 = ui.menuitem();
-      i1.setAttribute('label', 'item1');
-      i2 = ui.menuitem();
-      i2.setAttribute('label', 'item2');
-      menu.appendChild(i1);
-      menu.appendChild(i2);
-      return b.appendChild(menu);
+      }).add(menu).addTo('pwbox');
     }
   };
 window.$ = $
 window.PowerHistory = PowerHistory
+window._addAllTo = _addAllTo
 window._i = _i
 window._len = _len
 window._ref = _ref
 window._xul_list = _xul_list
+window.addTo = addTo
 window.ui = ui
 }).call(this);
