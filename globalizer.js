@@ -26,7 +26,4 @@
     addToTheEnd(lines, newLines);
     return (task.output = lines.join("\n"));
   });
-window.addToTheEnd = addToTheEnd
-window.getLines = getLines
-window.puts = puts
 }).call(this);

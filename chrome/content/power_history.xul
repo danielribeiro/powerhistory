@@ -4,16 +4,32 @@
         xmlns:html="http://www.w3.org/1999/xhtml"
         title="windowtitle"
         onload="PowerHistory.onLoad(event);"
+        id="pwwindow"
         >
-<!--            -->
     <script type="application/javascript" src="pwbrowser.js"/>
-<!--    <script type="application/javascript" src="jquery-1.4.4.js"/>-->
+<!--    <tree flex="1" hidecolumnpicker="true" onclick="alert('clicked');">
 
-    <box align="center" id='pwbox'>
-        <description flex="1" id="desc">My description</description>
-        <button label="A label " oncommand="PowerHistory.init();"/>
+        <treecols>
+            <treecol id="sender" hideheader="true" flex="1"/>
+            <treecol id="subject" hideheader="true" flex="2"/>
+        </treecols>
 
-    </box>
-    <vbox id="central"/>
+        <treechildren>
+            <treeitem>
+                <treerow>
+                    <treecell label="joe@somewhere.com"/>
+                    <treecell label="Top secret plans"/>
+                </treerow>
+            </treeitem>
+            <treeitem>
+                <treerow >
+                    <treecell label="mel@whereever.com"/>
+                    <treecell label="Let's do lunch"/>
+                </treerow>
+            </treeitem>
+        </treechildren>
+
+    </tree>-->
+
 
 </window>

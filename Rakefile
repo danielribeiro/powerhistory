@@ -19,7 +19,7 @@ task :compile_watch do
   require 'coffeecompiler'
   puts "Compiling it All"
   root = File.dirname __FILE__
-  compiler = CoffeeCompiler.new './globalizer.coffee'
+  compiler = CoffeeCompiler.new
   compiler.compileDir root
   system "watchr", 'compileall.rb'
 end
