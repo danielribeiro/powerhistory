@@ -7,29 +7,6 @@
         id="pwwindow"
         >
     <script type="application/javascript" src="pwbrowser.js"/>
-<!--    <tree flex="1" hidecolumnpicker="true" onclick="alert('clicked');">
-
-        <treecols>
-            <treecol id="sender" hideheader="true" flex="1"/>
-            <treecol id="subject" hideheader="true" flex="2"/>
-        </treecols>
-
-        <treechildren>
-            <treeitem>
-                <treerow>
-                    <treecell label="joe@somewhere.com"/>
-                    <treecell label="Top secret plans"/>
-                </treerow>
-            </treeitem>
-            <treeitem>
-                <treerow >
-                    <treecell label="mel@whereever.com"/>
-                    <treecell label="Let's do lunch"/>
-                </treerow>
-            </treeitem>
-        </treechildren>
-
-    </tree>-->
 
 
 </window>
