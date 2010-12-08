@@ -67,7 +67,7 @@
           return ret;
         };
         ret.xclick = function(func) {
-          ret.setAttribute('click', _Callbacks.addFunction(func));
+          ret.setAttribute('onclick', _Callbacks.addFunction(func));
           return ret;
         };
         ret.xcommand = function(func) {
@@ -146,6 +146,17 @@
     }, this));
     this.to = this.datepicker();
     this.from = this.datepicker();
+    this.toggler = ui.checkbox({
+      label: "Limit by Date"
+    }).xcommand(__bind(function() {
+      var _j, _len2, _ref2, _result, datePicker;
+      _result = []; _ref2 = [this.to, this.from];
+      for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+        datePicker = _ref2[_j];
+        _result.push(datePicker.setAttribute('disabled', !this.toggler.checked));
+      }
+      return _result;
+    }, this));
     return this;
   };
   PowerHistoryClass.prototype.text = function(label) {
@@ -162,22 +173,17 @@
     searchMenu = ui.box({
       align: 'center'
     }).add(this.searchinput, ui.button({
-      label: 'Search ',
-      oncommand: "PowerHistory.search();"
-    }), ui.checkbox({
+      label: 'Search '
+    }).xcommand(__bind(function() {
+      return this.search();
+    }, this)), ui.checkbox({
       label: "Search Inside Page's content"
-    }).xcommand(function() {
-      return alert('hi');
     }));
-    dataRange = ui.box().add(this.text('From:'), this.from, this.text('To:'), this.to, ui.checkbox({
-      label: "Limit by Date",
-      oncommand: "alert('here')"
-    }));
+    dataRange = ui.box().add(this.text('From:'), this.from, this.text('To:'), this.to, this.toggler);
     searchBox = ui.vbox().add(ui.spacer({
       height: '15'
     }), this.text('Power History'), searchMenu, dataRange);
-    addTo('pwwindow', searchBox, this.createContent());
-    return _Callbacks._innerFunction(0);
+    return addTo('pwwindow', searchBox, this.createContent());
   };
   PowerHistoryClass.prototype.addToContent = function(row) {
     var _j, _len2, _ref2, i, newRow;
@@ -205,11 +211,11 @@
     this.contentList.add(columns, this.content);
     return this.contentList;
   };
-  PowerHistoryClass.prototype.showhistory = function(query) {
-    var _ref2, _result, count, historyService, i, options, result, ret;
+  PowerHistoryClass.prototype.searchHistory = function(queryString) {
+    var _ref2, _result, count, historyService, i, options, query, result, ret;
     historyService = Components.classes["@mozilla.org/browser/nav-history-service;1"].getService(Components.interfaces.nsINavHistoryService);
     query = historyService.getNewQuery();
-    query.searchTerms = query;
+    query.searchTerms = queryString;
     options = historyService.getNewQueryOptions();
     options.sortingMode = options.SORT_BY_VISITCOUNT_DESCENDING;
     options.maxResults = 10;
@@ -227,12 +233,17 @@
     return ret;
   };
   PowerHistoryClass.prototype.search = function() {
-    var regex;
+    var _j, _len2, _ref2, _result, i, regex;
     if (this.searchinput.value.trim() === '') {
       return null;
     }
     regex = new RegExp(this.searchinput.value, 'i');
-    return this.searchWithin('http://news.ycombinator.com/item?id=1981547', regex);
+    _result = []; _ref2 = this.searchHistory(this.searchinput.value);
+    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+      i = _ref2[_j];
+      _result.push(this.addToContent(this.getFrom(i, 'title', 'icon', 'uri', 'accessCount', 'time')));
+    }
+    return _result;
   };
   PowerHistoryClass.prototype.onClick = function(event) {
     var cellText, col, firstcol, row, tbo, tree;

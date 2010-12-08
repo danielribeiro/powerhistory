@@ -28,7 +28,7 @@ dumpobj = (obj) ->
     ret = "#{k} = #{v.toString()}" for k, v in obj
     return ret.join ", "
 
-# To allows us to use functions instead of strings on commands and clicks
+# To allows us to use functions instead of strings on commands and clicks handlers
 class CallbackStorage
     constructor: -> @counter = 0
 
@@ -54,7 +54,7 @@ for element in _xul_list
             ret.textContent = args
             return ret
         ret.xclick = (func) ->
-            ret.setAttribute 'onClick', _Callbacks.addFunction(func)
+            ret.setAttribute 'onclick', _Callbacks.addFunction(func)
             return ret
         ret.xcommand = (func) ->
             ret.setAttribute 'oncommand', _Callbacks.addFunction(func)
@@ -135,22 +135,24 @@ class PowerHistoryClass
         @searchinput = ui.textbox()
         @content = ui.treechildren()
         @contentList = ui.tree(hidecolumnpicker: true, flex: 1
-            , seltype: 'single').xclick( (e) -> alert 'invoked')
+            , seltype: 'single').xclick((e) => @onClick e)
         @to = @datepicker()
         @from = @datepicker()
+        @toggler = ui.checkbox(label: "Limit by Date").xcommand =>
+            for datePicker in [@to, @from]
+                datePicker.setAttribute 'disabled', !@toggler.checked
 
     onLoad: ->
         searchMenu = ui.box(align: 'center').add(
             @searchinput,
-            ui.button(label: 'Search ', oncommand:"PowerHistory.search();"),
-            ui.checkbox(label: "Search Inside Page's content"))
+            ui.button(label: 'Search ').xcommand(=> @search()),
+            ui.checkbox(label: "Search Inside Page's content")
         )
         dataRange = ui.box().add @text('From:'), @from,
-            @text('To:'), @to, ui.checkbox(label: "Limit by Date")
+            @text('To:'), @to, @toggler
         searchBox = ui.vbox().add ui.spacer(height: '15'),
             @text('Power History'), searchMenu, dataRange
         addTo 'pwwindow', searchBox, @createContent()
-        _Callbacks._innerFunction(0)
 
     addToContent: (row) ->
         newRow = ui.treerow()
@@ -166,11 +168,11 @@ class PowerHistoryClass
         return @contentList
 
 
-    showhistory: (query) ->
+    searchHistory: (queryString) ->
         historyService = Components.classes["@mozilla.org/browser/nav-history-service;1"]
             .getService(Components.interfaces.nsINavHistoryService)
         query = historyService.getNewQuery()
-        query.searchTerms = query
+        query.searchTerms = queryString
         options = historyService.getNewQueryOptions()
         options.sortingMode = options.SORT_BY_VISITCOUNT_DESCENDING
         options.maxResults = 10
@@ -188,9 +190,9 @@ class PowerHistoryClass
     search: ->
         return if @searchinput.value.trim() is ''
         regex = new RegExp @searchinput.value, 'i'
-        @searchWithin 'http://news.ycombinator.com/item?id=1981547', regex
-        # for i in @showhistory(@searchinput.value)
-        #     @addToContent @getFrom i, 'title', 'icon', 'uri', 'accessCount', 'time'
+        # @searchWithin 'http://news.ycombinator.com/item?id=1981547', regex
+        for i in @searchHistory(@searchinput.value)
+            @addToContent @getFrom i, 'title', 'icon', 'uri', 'accessCount', 'time'
 
     onClick: (event) ->
         tree = @contentList
@@ -201,7 +203,6 @@ class PowerHistoryClass
         col = {}
         tbo.getCellAt event.clientX, event.clientY, row, col, {}
         try
-            # firstcol = col.value.columns.getColumnAt(0)
             firstcol = tbo.columns.getColumnAt(0)
             cellText = tree.view.getCellText(row.value, firstcol)
             alert "the text=#{cellText} row = #{row.value} col = #{col.value}"
