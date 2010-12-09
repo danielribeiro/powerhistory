@@ -184,14 +184,30 @@ class PowerHistoryClass
 
     createContent: ->
         columns = ui.treecols()
-        for column, size of {Title:20, Url:20, 'Visit count':1, 'Last visited':3}
+        for column, size of {Title:40, Url:40, 'Visit #':1, 'Last visited':20}
             columns.add ui.treecol(label: column, flex: size, fixed: false)
             columns.add ui.splitter(width: 0) unless column is 'Last visited'
         @contentList.add columns, @content
         return @contentList
 
-
     searchHistory: (queryString) ->
+        db = Components.classes['@mozilla.org/browser/nav-history-service;1']
+            .getService(Components.interfaces.nsPIPlacesDatabase).DBConnection
+        query = "SELECT url, title, visit_count, last_visit_date FROM moz_places
+        where url like 'http:%' order by visit_count limit 10"
+        sql_stmt = db.createStatement query
+        return @normalizeRow(sql_stmt.row) while sql_stmt.executeStep()
+
+    normalizeRow: (r) ->
+        ret =
+            title: r.title
+            uri: r.url
+            accessCount: r.visit_count
+            time: r.last_visit_date
+        return ret
+
+
+    xsearchHistory: (queryString) ->
         historyService = Components.classes["@mozilla.org/browser/nav-history-service;1"]
             .getService(Components.interfaces.nsINavHistoryService)
         query = historyService.getNewQuery()

@@ -225,10 +225,10 @@
     var _ref2, column, columns, size;
     columns = ui.treecols();
     _ref2 = {
-      Title: 20,
-      Url: 20,
-      'Visit count': 1,
-      'Last visited': 3
+      Title: 40,
+      Url: 40,
+      'Visit #': 1,
+      'Last visited': 20
     };
     for (column in _ref2) {
       if (!__hasProp.call(_ref2, column)) continue;
@@ -248,6 +248,28 @@
     return this.contentList;
   };
   PowerHistoryClass.prototype.searchHistory = function(queryString) {
+    var _result, db, query, sql_stmt;
+    db = Components.classes['@mozilla.org/browser/nav-history-service;1'].getService(Components.interfaces.nsPIPlacesDatabase).DBConnection;
+    query = "SELECT url, title, visit_count, last_visit_date FROM moz_places\
+        where url like 'http:%' order by visit_count limit 10";
+    sql_stmt = db.createStatement(query);
+    _result = [];
+    while (sql_stmt.executeStep()) {
+      _result.push(this.normalizeRow(sql_stmt.row));
+    }
+    return _result;
+  };
+  PowerHistoryClass.prototype.normalizeRow = function(r) {
+    var ret;
+    ret = {
+      title: r.title,
+      uri: r.url,
+      accessCount: r.visit_count,
+      time: r.last_visit_date
+    };
+    return ret;
+  };
+  PowerHistoryClass.prototype.xsearchHistory = function(queryString) {
     var _ref2, _result, count, historyService, i, options, query, result, ret;
     historyService = Components.classes["@mozilla.org/browser/nav-history-service;1"].getService(Components.interfaces.nsINavHistoryService);
     query = historyService.getNewQuery();
