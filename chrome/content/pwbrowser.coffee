@@ -125,14 +125,19 @@ class StreamListener
           return @
         throw Components.results.NS_NOINTERFACE;
 
-
+KEY_ENTER = 13
 class PowerHistoryClass
     text: (label) -> ui.description().text(label)
 
     datepicker: -> ui.datepicker(type:'popup', disabled: true)
 
+    handleKey: (event) ->
+        @search() if event.keyCode == KEY_ENTER
+
     constructor: ->
         @searchinput = ui.textbox()
+        @searchinput.addEventListener('keypress', ((e) => @handleKey(e)), true)
+
         @content = ui.treechildren()
         @contentList = ui.tree(hidecolumnpicker: true, flex: 1
             , seltype: 'single').xclick((e) => @onClick e)
@@ -141,6 +146,15 @@ class PowerHistoryClass
         @toggler = ui.checkbox(label: "Limit by Date").xcommand =>
             for datePicker in [@to, @from]
                 datePicker.setAttribute 'disabled', !@toggler.checked
+        @gBrowser = @constructGBrowser()
+
+    constructGBrowser: ->
+        window.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+            .getInterface(Components.interfaces.nsIWebNavigation)
+            .QueryInterface(Components.interfaces.nsIDocShellTreeItem)
+            .rootTreeItem
+            .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+            .getInterface(Components.interfaces.nsIDOMWindow).gBrowser
 
     onLoad: ->
         searchMenu = ui.box(align: 'center').add(
@@ -154,6 +168,9 @@ class PowerHistoryClass
             @text('Power History'), searchMenu, ui.spacer(height: '15'), dataRange
         addTo 'pwwindow', searchBox, @createContent()
 
+
+    addTab: (url) -> @gBrowser.addTab url
+
     addToContent: (row) ->
         newRow = ui.treerow()
         for i in row
@@ -162,8 +179,9 @@ class PowerHistoryClass
 
     createContent: ->
         columns = ui.treecols()
-        for column in ['Title', 'Url', 'How many times visited', 'Last visited']
-            columns.add ui.treecol(label: column, flex: 1)
+        for column, size of {Title:20, Url:20, 'Visit count':1, 'Last visited':3}
+            columns.add ui.treecol(label: column, flex: size, fixed: false)
+            columns.add ui.splitter(width: 0) unless column is 'Last visited'
         @contentList.add columns, @content
         return @contentList
 
@@ -173,7 +191,6 @@ class PowerHistoryClass
             .getService(Components.interfaces.nsINavHistoryService)
         query = historyService.getNewQuery()
         query.searchTerms = queryString
-        query.includeHidden = true
         options = historyService.getNewQueryOptions()
         options.sortingMode = options.SORT_BY_VISITCOUNT_DESCENDING
         #options.maxResults = 10
@@ -204,9 +221,9 @@ class PowerHistoryClass
         col = {}
         tbo.getCellAt event.clientX, event.clientY, row, col, {}
         try
-            firstcol = tbo.columns.getColumnAt(0)
-            cellText = tree.view.getCellText(row.value, firstcol)
-            alert "the text=#{cellText} row = #{row.value} col = #{col.value}"
+            urlcolumn = tbo.columns.getColumnAt 1
+            page = tree.view.getCellText(row.value, urlcolumn)
+            @addTab page
         catch error
             return
 

@@ -1,5 +1,5 @@
 (function() {
-  var $, CallbackStorage, PowerHistoryClass, StreamListener, _addAllTo, _i, _len, _ref, _xul_list, addTo, dumpobj, ui;
+  var $, CallbackStorage, KEY_ENTER, PowerHistoryClass, StreamListener, _addAllTo, _i, _len, _ref, _xul_list, addTo, dumpobj, ui;
   var __hasProp = Object.prototype.hasOwnProperty, __slice = Array.prototype.slice, __bind = function(func, context) {
     return function(){ return func.apply(context, arguments); };
   };
@@ -134,8 +134,12 @@
     }
     throw Components.results.NS_NOINTERFACE;
   };
+  KEY_ENTER = 13;
   PowerHistoryClass = function() {
     this.searchinput = ui.textbox();
+    this.searchinput.addEventListener('keypress', __bind(function(e) {
+      return this.handleKey(e);
+    }, this), true);
     this.content = ui.treechildren();
     this.contentList = ui.tree({
       hidecolumnpicker: true,
@@ -157,6 +161,7 @@
       }
       return _result;
     }, this));
+    this.gBrowser = this.constructGBrowser();
     return this;
   };
   PowerHistoryClass.prototype.text = function(label) {
@@ -167,6 +172,14 @@
       type: 'popup',
       disabled: true
     });
+  };
+  PowerHistoryClass.prototype.handleKey = function(event) {
+    if (event.keyCode === KEY_ENTER) {
+      return this.search();
+    }
+  };
+  PowerHistoryClass.prototype.constructGBrowser = function() {
+    return window.QueryInterface(Components.interfaces.nsIInterfaceRequestor).getInterface(Components.interfaces.nsIWebNavigation).QueryInterface(Components.interfaces.nsIDocShellTreeItem).rootTreeItem.QueryInterface(Components.interfaces.nsIInterfaceRequestor).getInterface(Components.interfaces.nsIDOMWindow).gBrowser;
   };
   PowerHistoryClass.prototype.onLoad = function() {
     var dataRange, searchBox, searchMenu;
@@ -187,6 +200,9 @@
     }), dataRange);
     return addTo('pwwindow', searchBox, this.createContent());
   };
+  PowerHistoryClass.prototype.addTab = function(url) {
+    return this.gBrowser.addTab(url);
+  };
   PowerHistoryClass.prototype.addToContent = function(row) {
     var _j, _len2, _ref2, i, newRow;
     newRow = ui.treerow();
@@ -200,15 +216,27 @@
     return this.content.add(ui.treeitem().add(newRow));
   };
   PowerHistoryClass.prototype.createContent = function() {
-    var _j, _len2, _ref2, column, columns;
+    var _ref2, column, columns, size;
     columns = ui.treecols();
-    _ref2 = ['Title', 'Url', 'How many times visited', 'Last visited'];
-    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-      column = _ref2[_j];
+    _ref2 = {
+      Title: 20,
+      Url: 20,
+      'Visit count': 1,
+      'Last visited': 3
+    };
+    for (column in _ref2) {
+      if (!__hasProp.call(_ref2, column)) continue;
+      size = _ref2[column];
       columns.add(ui.treecol({
         label: column,
-        flex: 1
+        flex: size,
+        fixed: false
       }));
+      if (column !== 'Last visited') {
+        columns.add(ui.splitter({
+          width: 0
+        }));
+      }
     }
     this.contentList.add(columns, this.content);
     return this.contentList;
@@ -218,7 +246,6 @@
     historyService = Components.classes["@mozilla.org/browser/nav-history-service;1"].getService(Components.interfaces.nsINavHistoryService);
     query = historyService.getNewQuery();
     query.searchTerms = queryString;
-    query.includeHidden = true;
     options = historyService.getNewQueryOptions();
     options.sortingMode = options.SORT_BY_VISITCOUNT_DESCENDING;
     result = historyService.executeQuery(query, options);
@@ -248,16 +275,16 @@
     return _result;
   };
   PowerHistoryClass.prototype.onClick = function(event) {
-    var cellText, col, firstcol, row, tbo, tree;
+    var col, page, row, tbo, tree, urlcolumn;
     tree = this.contentList;
     tbo = tree.treeBoxObject;
     row = {};
     col = {};
     tbo.getCellAt(event.clientX, event.clientY, row, col, {});
     try {
-      firstcol = tbo.columns.getColumnAt(0);
-      cellText = tree.view.getCellText(row.value, firstcol);
-      return alert("the text=" + (cellText) + " row = " + (row.value) + " col = " + (col.value));
+      urlcolumn = tbo.columns.getColumnAt(1);
+      page = tree.view.getCellText(row.value, urlcolumn);
+      return this.addTab(page);
     } catch (error) {
       return null;
     }
