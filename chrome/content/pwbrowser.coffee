@@ -151,7 +151,7 @@ class PowerHistoryClass
         dataRange = ui.box().add @text('From:'), @from,
             @text('To:'), @to, @toggler
         searchBox = ui.vbox().add ui.spacer(height: '15'),
-            @text('Power History'), searchMenu, dataRange
+            @text('Power History'), searchMenu, ui.spacer(height: '15'), dataRange
         addTo 'pwwindow', searchBox, @createContent()
 
     addToContent: (row) ->
@@ -162,7 +162,7 @@ class PowerHistoryClass
 
     createContent: ->
         columns = ui.treecols()
-        for column in ['Title', 'Icon', 'Url', 'How many times visited', 'Last visited']
+        for column in ['Title', 'Url', 'How many times visited', 'Last visited']
             columns.add ui.treecol(label: column, flex: 1)
         @contentList.add columns, @content
         return @contentList
@@ -173,9 +173,10 @@ class PowerHistoryClass
             .getService(Components.interfaces.nsINavHistoryService)
         query = historyService.getNewQuery()
         query.searchTerms = queryString
+        query.includeHidden = true
         options = historyService.getNewQueryOptions()
         options.sortingMode = options.SORT_BY_VISITCOUNT_DESCENDING
-        options.maxResults = 10
+        #options.maxResults = 10
 
         #execute the query
         result = historyService.executeQuery(query, options)
@@ -192,7 +193,7 @@ class PowerHistoryClass
         regex = new RegExp @searchinput.value, 'i'
         # @searchWithin 'http://news.ycombinator.com/item?id=1981547', regex
         for i in @searchHistory(@searchinput.value)
-            @addToContent @getFrom i, 'title', 'icon', 'uri', 'accessCount', 'time'
+            @addToContent @getFrom i, 'title', 'uri', 'accessCount', 'time'
 
     onClick: (event) ->
         tree = @contentList
@@ -227,7 +228,7 @@ class PowerHistoryClass
                 @noResultFor url
 
     addResult: (url) ->
-        @addToContent ['title', 'icon', url, 'accessCount', 'time']
+        @addToContent ['title', url, 'accessCount', 'time']
 
     noResultFor: (url) ->
         return

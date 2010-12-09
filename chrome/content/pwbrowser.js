@@ -182,7 +182,9 @@
     dataRange = ui.box().add(this.text('From:'), this.from, this.text('To:'), this.to, this.toggler);
     searchBox = ui.vbox().add(ui.spacer({
       height: '15'
-    }), this.text('Power History'), searchMenu, dataRange);
+    }), this.text('Power History'), searchMenu, ui.spacer({
+      height: '15'
+    }), dataRange);
     return addTo('pwwindow', searchBox, this.createContent());
   };
   PowerHistoryClass.prototype.addToContent = function(row) {
@@ -200,7 +202,7 @@
   PowerHistoryClass.prototype.createContent = function() {
     var _j, _len2, _ref2, column, columns;
     columns = ui.treecols();
-    _ref2 = ['Title', 'Icon', 'Url', 'How many times visited', 'Last visited'];
+    _ref2 = ['Title', 'Url', 'How many times visited', 'Last visited'];
     for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
       column = _ref2[_j];
       columns.add(ui.treecol({
@@ -216,9 +218,9 @@
     historyService = Components.classes["@mozilla.org/browser/nav-history-service;1"].getService(Components.interfaces.nsINavHistoryService);
     query = historyService.getNewQuery();
     query.searchTerms = queryString;
+    query.includeHidden = true;
     options = historyService.getNewQueryOptions();
     options.sortingMode = options.SORT_BY_VISITCOUNT_DESCENDING;
-    options.maxResults = 10;
     result = historyService.executeQuery(query, options);
     result.root.containerOpen = true;
     count = result.root.childCount;
@@ -241,7 +243,7 @@
     _result = []; _ref2 = this.searchHistory(this.searchinput.value);
     for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
       i = _ref2[_j];
-      _result.push(this.addToContent(this.getFrom(i, 'title', 'icon', 'uri', 'accessCount', 'time')));
+      _result.push(this.addToContent(this.getFrom(i, 'title', 'uri', 'accessCount', 'time')));
     }
     return _result;
   };
@@ -284,7 +286,7 @@
     }, this));
   };
   PowerHistoryClass.prototype.addResult = function(url) {
-    return this.addToContent(['title', 'icon', url, 'accessCount', 'time']);
+    return this.addToContent(['title', url, 'accessCount', 'time']);
   };
   PowerHistoryClass.prototype.noResultFor = function(url) {
     return null;
