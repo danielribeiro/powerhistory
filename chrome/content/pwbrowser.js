@@ -203,6 +203,12 @@
   PowerHistoryClass.prototype.addTab = function(url) {
     return this.gBrowser.addTab(url);
   };
+  PowerHistoryClass.prototype.clearContent = function() {
+    while (this.content.hasChildNodes()) {
+      this.content.removeChild(this.content.firstChild);
+    }
+    return null;
+  };
   PowerHistoryClass.prototype.addToContent = function(row) {
     var _j, _len2, _ref2, i, newRow;
     newRow = ui.treerow();
@@ -248,6 +254,7 @@
     query.searchTerms = queryString;
     options = historyService.getNewQueryOptions();
     options.sortingMode = options.SORT_BY_VISITCOUNT_DESCENDING;
+    options.maxResults = 10;
     result = historyService.executeQuery(query, options);
     result.root.containerOpen = true;
     count = result.root.childCount;
@@ -267,6 +274,7 @@
       return null;
     }
     regex = new RegExp(this.searchinput.value, 'i');
+    this.clearContent();
     _result = []; _ref2 = this.searchHistory(this.searchinput.value);
     for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
       i = _ref2[_j];

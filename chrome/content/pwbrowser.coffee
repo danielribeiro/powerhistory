@@ -171,6 +171,11 @@ class PowerHistoryClass
 
     addTab: (url) -> @gBrowser.addTab url
 
+    clearContent: ->
+        while @content.hasChildNodes()
+            @content.removeChild @content.firstChild
+        return
+
     addToContent: (row) ->
         newRow = ui.treerow()
         for i in row
@@ -193,7 +198,7 @@ class PowerHistoryClass
         query.searchTerms = queryString
         options = historyService.getNewQueryOptions()
         options.sortingMode = options.SORT_BY_VISITCOUNT_DESCENDING
-        #options.maxResults = 10
+        options.maxResults = 10
 
         #execute the query
         result = historyService.executeQuery(query, options)
@@ -209,6 +214,7 @@ class PowerHistoryClass
         return if @searchinput.value.trim() is ''
         regex = new RegExp @searchinput.value, 'i'
         # @searchWithin 'http://news.ycombinator.com/item?id=1981547', regex
+        @clearContent()
         for i in @searchHistory(@searchinput.value)
             @addToContent @getFrom i, 'title', 'uri', 'accessCount', 'time'
 
@@ -244,8 +250,9 @@ class PowerHistoryClass
             else
                 @noResultFor url
 
-    addResult: (url) ->
-        @addToContent ['title', url, 'accessCount', 'time']
+
+
+    addResult: (url) -> @addToContent ['title', url, 'accessCount', 'time']
 
     noResultFor: (url) ->
         return
