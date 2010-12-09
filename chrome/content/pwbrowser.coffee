@@ -216,7 +216,7 @@ class PowerHistoryClass
         # @searchWithin 'http://news.ycombinator.com/item?id=1981547', regex
         @clearContent()
         for i in @searchHistory(@searchinput.value)
-            @addToContent @getFrom i, 'title', 'uri', 'accessCount', 'time'
+            @addToContent [i.title, i.uri, i.accessCount, new Date(i.time / 1000)]
 
     onClick: (event) ->
         tree = @contentList

@@ -278,7 +278,7 @@
     _result = []; _ref2 = this.searchHistory(this.searchinput.value);
     for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
       i = _ref2[_j];
-      _result.push(this.addToContent(this.getFrom(i, 'title', 'uri', 'accessCount', 'time')));
+      _result.push(this.addToContent([i.title, i.uri, i.accessCount, new Date(i.time / 1000)]));
     }
     return _result;
   };
