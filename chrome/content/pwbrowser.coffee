@@ -160,6 +160,25 @@ class AsyncCounter
         @updateDisplay()
         @searchingIndicator.collapsed = true if @isDone()
 
+# Simple set
+class Set
+    constructor: (array) ->
+        @data = {}
+        @add i for i in array if array?
+    add: (o) -> @data[o] = o
+    remove: (o) -> delete @data[o]
+    include: (o) -> @data[o]?
+
+    each: (fn) ->
+        for k, v of @data
+            fn v
+        return
+
+    empty: ->
+        for k of @data
+            return false
+        return true
+
 
 KEY_ENTER = 13
 class PowerHistoryClass
@@ -171,7 +190,7 @@ class PowerHistoryClass
         @search() if event.keyCode == KEY_ENTER
 
     constructor: ->
-        @visitedDomains = {}
+        @visitedDomains = new Set()
         @asyncCounter = new AsyncCounter()
         @searchinput = ui.textbox()
         @searchinput.addEventListener('keypress', ((e) => @handleKey(e)), true)
@@ -212,10 +231,13 @@ class PowerHistoryClass
         metaSearch = ui.vbox().add ui.spacer(height: '15'), @asyncCounter.display()
         menu = ui.box().add searchBox, metaSearch
         addTo 'pwwindow', menu, @createContent()
+        @debug = ui.textbox(multiline: true, flex: 15)
+        addTo 'pwwindow', @debug
+
 
 
     clearContent: ->
-        @visitedDomains = {}
+        @visitedDomains = new Set()
         @asyncCounter.reset()
         while @content.hasChildNodes()
             @content.removeChild @content.firstChild
@@ -262,21 +284,35 @@ class PowerHistoryClass
             unless @confirmBigData()
                 @hideIndicator()
                 return
-        orExpression = words.join('|')
-        regex = new RegExp "(?:#{orExpression})", 'i'
+        regexes = new RegExp(word, 'i') for word in words
         query = "SELECT url, title, visit_count, last_visit_date FROM moz_places
         where url like 'http:%' #{@_datePart()} order by last_visit_date
-        desc"
-        @_executeSearchQuery query, (i) =>
-            return @addToContent i if @matches(i.title, regex) or @matches(i.url, regex)
-            @showIndicator()
-            @makeRequest i.url, (data) =>
-                @addToContent i if @matches(@_stripHtml(data), regex)
-                @hideIndicator()
+        desc limit 1"
+        @_executeSearchQuery query, (row) => @searchForAllWithin row, regexes
 
+    searchForAllWithin: (i, regexes) ->
+        missingRegexes = new Set regexes
+        @matchesOn(i.title, missingRegexes)
+        @matchesOn(i.url, missingRegexes)
+        return @addToContent i if missingRegexes.empty()
+        @showIndicator()
+        @makeRequest i.url, (data) =>
+            @matchesOnx(@_stripHtml(data), missingRegexes, i.url)
+            @addToContent i if missingRegexes.empty()
+            @hideIndicator()
 
+    log: (str) ->
+        @debug.value += str
 
-    matches: (str, pattern) -> str.search(pattern) >= 0
+    matchesOnx: (str, patternSet, url) ->
+        patternSet.each (pattern) =>
+            patternSet.remove pattern if str.search(pattern) >= 0
+        return
+
+    matchesOn: (str, patternSet) ->
+        patternSet.each (pattern) ->
+            patternSet.remove pattern if str.search(pattern) >= 0
+        return
 
     basicSearchHistory: (words) ->
         likeParts = @urlOrTitleHas(w) for w in words
@@ -318,13 +354,16 @@ class PowerHistoryClass
         channel = @ioService.newChannelFromURI uri
         listener = new StreamListener channel, callback
         domain = url.split('/')[2]
-        unless @visitedDomains[domain]
-            @visitedDomains[domain] = true
+        unless @visitedDomains.include domain
+            @visitedDomains.add domain
             channel.asyncOpen listener, null
             return
-        setTimeout((-> channel.asyncOpen listener, null), 10000)
+        setTimeout((-> channel.asyncOpen listener, null), @politeTimeout())
         return
 
+    # Don't want users to get blocked for spamming sites. Google, in particular,
+    # is quite sensitive.
+    politeTimeout: -> 10000
 
     _stripHtml: (text) -> text.replace /<.*?>/g, ''
 

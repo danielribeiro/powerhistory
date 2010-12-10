@@ -1,5 +1,5 @@
 (function() {
-  var $, AsyncCounter, CallbackStorage, KEY_ENTER, PowerHistoryClass, StreamListener, _addAllTo, _i, _len, _ref, _xul_list, addTo, dumpobj, ui;
+  var $, AsyncCounter, CallbackStorage, KEY_ENTER, PowerHistoryClass, Set, StreamListener, _addAllTo, _i, _len, _ref, _xul_list, addTo, dumpobj, ui;
   var __hasProp = Object.prototype.hasOwnProperty, __slice = Array.prototype.slice, __bind = function(func, context) {
     return function(){ return func.apply(context, arguments); };
   };
@@ -187,9 +187,51 @@
       return (this.searchingIndicator.collapsed = true);
     }
   };
+  Set = function(array) {
+    var _j, _len2, _ref2, i;
+    this.data = {};
+    if (typeof array !== "undefined" && array !== null) {
+      _ref2 = array;
+      for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+        i = _ref2[_j];
+        this.add(i);
+      }
+    }
+    return this;
+  };
+  Set.prototype.add = function(o) {
+    return (this.data[o] = o);
+  };
+  Set.prototype.remove = function(o) {
+    return delete this.data[o];
+  };
+  Set.prototype.include = function(o) {
+    var _ref2;
+    return (typeof (_ref2 = this.data[o]) !== "undefined" && _ref2 !== null);
+  };
+  Set.prototype.each = function(fn) {
+    var _ref2, k, v;
+    _ref2 = this.data;
+    for (k in _ref2) {
+      if (!__hasProp.call(_ref2, k)) continue;
+      v = _ref2[k];
+      fn(v);
+    }
+    return null;
+  };
+  Set.prototype.empty = function() {
+    var _j, _ref2, k;
+    _ref2 = this.data;
+    for (k in _ref2) {
+      if (!__hasProp.call(_ref2, k)) continue;
+      _j = _ref2[k];
+      return false;
+    }
+    return true;
+  };
   KEY_ENTER = 13;
   PowerHistoryClass = function() {
-    this.visitedDomains = {};
+    this.visitedDomains = new Set();
     this.asyncCounter = new AsyncCounter();
     this.searchinput = ui.textbox();
     this.searchinput.addEventListener('keypress', __bind(function(e) {
@@ -257,10 +299,15 @@
       height: '15'
     }), this.asyncCounter.display());
     menu = ui.box().add(searchBox, metaSearch);
-    return addTo('pwwindow', menu, this.createContent());
+    addTo('pwwindow', menu, this.createContent());
+    this.debug = ui.textbox({
+      multiline: true,
+      flex: 15
+    });
+    return addTo('pwwindow', this.debug);
   };
   PowerHistoryClass.prototype.clearContent = function() {
-    this.visitedDomains = {};
+    this.visitedDomains = new Set();
     this.asyncCounter.reset();
     while (this.content.hasChildNodes()) {
       this.content.removeChild(this.content.firstChild);
@@ -332,33 +379,63 @@
     return (result = prompts.confirmCheck(null, info, "Are you sure?", "Don't ask again", check));
   };
   PowerHistoryClass.prototype.withinSearchHistory = function(words, fn) {
-    var orExpression, query, regex;
+    var _j, _len2, _ref2, _result, query, regexes, word;
     if (!(this.withinDate.checked)) {
       if (!(this.confirmBigData())) {
         this.hideIndicator();
         return null;
       }
     }
-    orExpression = words.join('|');
-    regex = new RegExp("(?:" + (orExpression) + ")", 'i');
+    regexes = (function() {
+      _result = []; _ref2 = words;
+      for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+        word = _ref2[_j];
+        _result.push(new RegExp(word, 'i'));
+      }
+      return _result;
+    })();
     query = ("SELECT url, title, visit_count, last_visit_date FROM moz_places\
         where url like 'http:%' " + (this._datePart()) + " order by last_visit_date\
-        desc");
-    return this._executeSearchQuery(query, __bind(function(i) {
-      if (this.matches(i.title, regex) || this.matches(i.url, regex)) {
-        return this.addToContent(i);
-      }
-      this.showIndicator();
-      return this.makeRequest(i.url, __bind(function(data) {
-        if (this.matches(this._stripHtml(data), regex)) {
-          this.addToContent(i);
-        }
-        return this.hideIndicator();
-      }, this));
+        desc limit 1");
+    return this._executeSearchQuery(query, __bind(function(row) {
+      return this.searchForAllWithin(row, regexes);
     }, this));
   };
-  PowerHistoryClass.prototype.matches = function(str, pattern) {
-    return str.search(pattern) >= 0;
+  PowerHistoryClass.prototype.searchForAllWithin = function(i, regexes) {
+    var missingRegexes;
+    missingRegexes = new Set(regexes);
+    this.matchesOn(i.title, missingRegexes);
+    this.matchesOn(i.url, missingRegexes);
+    if (missingRegexes.empty()) {
+      return this.addToContent(i);
+    }
+    this.showIndicator();
+    return this.makeRequest(i.url, __bind(function(data) {
+      this.matchesOnx(this._stripHtml(data), missingRegexes, i.url);
+      if (missingRegexes.empty()) {
+        this.addToContent(i);
+      }
+      return this.hideIndicator();
+    }, this));
+  };
+  PowerHistoryClass.prototype.log = function(str) {
+    return this.debug.value += str;
+  };
+  PowerHistoryClass.prototype.matchesOnx = function(str, patternSet, url) {
+    patternSet.each(__bind(function(pattern) {
+      if (str.search(pattern) >= 0) {
+        return patternSet.remove(pattern);
+      }
+    }, this));
+    return null;
+  };
+  PowerHistoryClass.prototype.matchesOn = function(str, patternSet) {
+    patternSet.each(function(pattern) {
+      if (str.search(pattern) >= 0) {
+        return patternSet.remove(pattern);
+      }
+    });
+    return null;
   };
   PowerHistoryClass.prototype.basicSearchHistory = function(words) {
     var _j, _len2, _ref2, _result, likeParts, likeQuery, query, w;
@@ -417,15 +494,18 @@
     channel = this.ioService.newChannelFromURI(uri);
     listener = new StreamListener(channel, callback);
     domain = url.split('/')[2];
-    if (!(this.visitedDomains[domain])) {
-      this.visitedDomains[domain] = true;
+    if (!(this.visitedDomains.include(domain))) {
+      this.visitedDomains.add(domain);
       channel.asyncOpen(listener, null);
       return null;
     }
     setTimeout(function() {
       return channel.asyncOpen(listener, null);
-    }, 10000);
+    }, this.politeTimeout());
     return null;
+  };
+  PowerHistoryClass.prototype.politeTimeout = function() {
+    return 10000;
   };
   PowerHistoryClass.prototype._stripHtml = function(text) {
     return text.replace(/<.*?>/g, '');
