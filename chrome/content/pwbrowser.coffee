@@ -185,6 +185,9 @@ class PowerHistoryClass
                 datePicker.setAttribute 'disabled', !@withinDate.checked
         @gBrowser = @constructGBrowser()
         @searchWithinBox = ui.checkbox(label: "Search Inside Page's content")
+        @ioService = Components.classes["@mozilla.org/network/io-service;1"]
+            .getService(Components.interfaces.nsIIOService)
+
 
 
     constructGBrowser: ->
@@ -244,15 +247,24 @@ class PowerHistoryClass
         @basicSearchHistory words
 
 
-    #searchWithin: (row) ->
-
+    confirmBigData: ->
+        prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
+            .getService(Components.interfaces.nsIPromptService)
+        check = { value: true }
+        info = "This query may take a long time."
+        result = prompts.confirmCheck null, info,
+            "Are you sure?", "Don't ask again", check
 
     withinSearchHistory: (words, fn) ->
+        unless @withinDate.checked
+            unless @confirmBigData()
+                @hideIndicator()
+                return
         orExpression = words.join('|')
         regex = new RegExp "(?:#{orExpression})", 'i'
         query = "SELECT url, title, visit_count, last_visit_date FROM moz_places
         where url like 'http:%' #{@_datePart()} order by last_visit_date
-        desc limit 100"
+        desc"
         @_executeSearchQuery query, (i) =>
             return @addToContent i if @matches(i.title, regex) or @matches(i.url, regex)
             @showIndicator()
@@ -300,10 +312,8 @@ class PowerHistoryClass
     addTab: (url) -> @gBrowser.addTab url
 
     makeRequest: (url, callback) ->
-        ioService = Components.classes["@mozilla.org/network/io-service;1"]
-            .getService(Components.interfaces.nsIIOService)
-        uri = ioService.newURI url, null, null
-        channel = ioService.newChannelFromURI uri
+        uri = @ioService.newURI url, null, null
+        channel = @ioService.newChannelFromURI uri
         listener = new StreamListener channel, callback
         channel.asyncOpen listener, null
 

@@ -219,6 +219,7 @@
     this.searchWithinBox = ui.checkbox({
       label: "Search Inside Page's content"
     });
+    this.ioService = Components.classes["@mozilla.org/network/io-service;1"].getService(Components.interfaces.nsIIOService);
     return this;
   };
   PowerHistoryClass.prototype.text = function(label) {
@@ -319,13 +320,28 @@
     }
     return this.basicSearchHistory(words);
   };
+  PowerHistoryClass.prototype.confirmBigData = function() {
+    var check, info, prompts, result;
+    prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"].getService(Components.interfaces.nsIPromptService);
+    check = {
+      value: true
+    };
+    info = "This query may take a long time.";
+    return (result = prompts.confirmCheck(null, info, "Are you sure?", "Don't ask again", check));
+  };
   PowerHistoryClass.prototype.withinSearchHistory = function(words, fn) {
     var orExpression, query, regex;
+    if (!(this.withinDate.checked)) {
+      if (!(this.confirmBigData())) {
+        this.hideIndicator();
+        return null;
+      }
+    }
     orExpression = words.join('|');
     regex = new RegExp("(?:" + (orExpression) + ")", 'i');
     query = ("SELECT url, title, visit_count, last_visit_date FROM moz_places\
         where url like 'http:%' " + (this._datePart()) + " order by last_visit_date\
-        desc limit 100");
+        desc");
     return this._executeSearchQuery(query, __bind(function(i) {
       if (this.matches(i.title, regex) || this.matches(i.url, regex)) {
         return this.addToContent(i);
@@ -394,10 +410,9 @@
     return this.gBrowser.addTab(url);
   };
   PowerHistoryClass.prototype.makeRequest = function(url, callback) {
-    var channel, ioService, listener, uri;
-    ioService = Components.classes["@mozilla.org/network/io-service;1"].getService(Components.interfaces.nsIIOService);
-    uri = ioService.newURI(url, null, null);
-    channel = ioService.newChannelFromURI(uri);
+    var channel, listener, uri;
+    uri = this.ioService.newURI(url, null, null);
+    channel = this.ioService.newChannelFromURI(uri);
     listener = new StreamListener(channel, callback);
     return channel.asyncOpen(listener, null);
   };
