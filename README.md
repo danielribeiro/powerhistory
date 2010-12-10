@@ -13,10 +13,14 @@ Known limitations: does not request iframes and frames inside the pages.
 Building
 ----
 To build the project, you need [coffeescript](http://jashkenas.github.com/coffee-script/)
-at least 0.9.4 and ruby (at least 1.8.7).
+at least 0.9.4, ruby (at least 1.8.7) and the zip command line tool (which comes with
+most linux distributions)
 
 The default rake task compiles the project and watches for any changes on coffee files.
 This requires [watchr](https://github.com/mynyml/watchr) gem.
+
+The actual building process is a simple command *rake package*. It will build the
+[xpi](https://developer.mozilla.org/en/extension_packaging) on the pkg folder.
 
 
 Meta

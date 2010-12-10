@@ -14,13 +14,24 @@ task :default => [:compile_watch]
 #$LOAD_PATH.unshift File.join(File.dirname(__FILE__),'lib')
 require 'pp'
 
-desc "compile all coffeescripts and start watching them"
-task :compile_watch do
+def compileall
   require 'coffeecompiler'
   puts "Compiling it All"
   root = File.dirname __FILE__
   compiler = CoffeeCompiler.new
   compiler.compileDir root
+end
+
+desc "compile all coffeescripts and start watching them"
+task :compile_watch do
+  compileAll
   system "watchr", 'compileall.rb'
 end
 
+desc "Compile all coffeescript and packages it into pkg directory"
+task :package do
+  require 'fileutils'
+  FileUtils.mkpath 'pkg'
+  compileall
+  system 'zip', *%w[-r pkg/powerhistory.xpi chrome install.rdf chrome]
+end

@@ -18,16 +18,6 @@ class CoffeeCompiler
 
   end
 
-  def compileAll(baseFile, coffeeDir, outDir)
-    root = Fileobject.new baseFile
-    Dir["#{coffeeDir}/**/*.coffee"].each do |f|
-      subPath = File.dirname f.gsub /^#{coffeeDir}\//, ''
-      dir = "#{outDir}/#{subPath}"
-      root.pathAndCreate dir
-      compile f, dir
-    end
-  end
-
   def compileDir(dir, outputDir = nil)
     Dir["#{dir}/**/*.coffee"].each {|f| compile f, outputDir}
   end
