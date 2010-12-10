@@ -133,6 +133,7 @@ class PowerHistoryClass
         @search() if event.keyCode == KEY_ENTER
 
     constructor: ->
+        @asyncCount = 0
         @searchinput = ui.textbox()
         @searchinput.addEventListener('keypress', ((e) => @handleKey(e)), true)
 
@@ -145,7 +146,11 @@ class PowerHistoryClass
             for datePicker in [@to, @from]
                 datePicker.setAttribute 'disabled', !@withinDate.checked
         @gBrowser = @constructGBrowser()
-        @searchWithinBox = ui.checkbox(label: "Search Inside Page's content", checked: true)
+        @searchWithinBox = ui.checkbox(label: "Search Inside Page's content")
+        loadingUrl = "chrome://global/skin/icons/loading_16.png"
+        @searchingIndicator = ui.box(collapsed: true)
+            .add(ui.image(src: loadingUrl, maxwidth: 16, maxheight: 16),
+                ui.description(style: "font: 1.2em bold;").text("Searching..."))
 
     constructGBrowser: ->
         window.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
@@ -156,7 +161,7 @@ class PowerHistoryClass
             .getInterface(Components.interfaces.nsIDOMWindow).gBrowser
 
     onLoad: ->
-        searchMenu = ui.box(align: 'center').add(
+        searchMenu = ui.box().add(
             @searchinput,
             ui.button(label: 'Search ').xcommand(=> @search()),
             @searchWithinBox
@@ -165,7 +170,9 @@ class PowerHistoryClass
             @text('To:'), @to, @withinDate
         searchBox = ui.vbox().add ui.spacer(height: '15'),
             @text('Power History'), searchMenu, ui.spacer(height: '15'), dataRange
-        addTo 'pwwindow', searchBox, @createContent()
+        metaSearch = ui.vbox().add ui.spacer(height: '15'), @searchingIndicator
+        menu = ui.box().add searchBox, metaSearch
+        addTo 'pwwindow', menu, @createContent()
 
 
     clearContent: ->
@@ -173,11 +180,12 @@ class PowerHistoryClass
             @content.removeChild @content.firstChild
         return
 
-    addToContent: (row) ->
+    addToContent: (i) ->
         newRow = ui.treerow()
-        for i in row
-            newRow.add ui.treecell(label:i)
+        for value in [i.title, i.url, i.visit_count, new Date(i.last_visit_date / 1000)]
+            newRow.add ui.treecell(label:value)
         @content.add ui.treeitem().add newRow
+        return
 
     createContent: ->
         columns = ui.treecols()
@@ -191,31 +199,42 @@ class PowerHistoryClass
         value = @searchinput.value.trim()
         return if value is ''
         @clearContent()
-        @searchHistory value
+        @showIndicator()
+        @searchHistory value.split /\s+/
 
 
-    searchHistory: (queryString) ->
-        return @withinSearchHistory queryString if @searchWithinBox.checked
-        return @basicSearchHistory queryString
+    searchHistory: (words) ->
+        return @withinSearchHistory words if @searchWithinBox.checked
+        @basicSearchHistory words
 
-    withinSearchHistory: (queryString, fn) ->
-        words = queryString.split /\s+/
+
+    #searchWithin: (row) ->
+
+
+    withinSearchHistory: (words, fn) ->
+        orExpression = words.join('|')
+        regex = new RegExp "(?:#{orExpression})", 'i'
         query = "SELECT url, title, visit_count, last_visit_date FROM moz_places
         where url like 'http:%' #{@_datePart()} order by last_visit_date
-        desc"
-        return @_executeSearchQuery query
+        desc limit 100"
+        @_executeSearchQuery query, (i) =>
+            return @addToContent i if @matches(i.title, regex) or @matches(i.url, regex)
+            @showIndicator()
+            @makeRequest i.url, (data) =>
+                @addToContent i if @matches(@_stripHtml(data), regex)
+                @hideIndicator()
 
-    basicSearchHistory: (queryString) ->
-        words = queryString.split /\s+/
+
+
+    matches: (str, pattern) -> str.search(pattern) >= 0
+
+    basicSearchHistory: (words) ->
         likeParts = @urlOrTitleHas(w) for w in words
         likeQuery =  likeParts.join(' AND ')
         query = "SELECT url, title, visit_count, last_visit_date FROM moz_places
         where url like 'http:%' AND (#{likeQuery}) #{@_datePart()} order by last_visit_date
         desc"
-        #alert query
-        #regex = new RegExp @searchinput.value, 'i'
-        # @searchWithin 'http://news.ycombinator.com/item?id=1981547', regex
-        return @_executeSearchQuery query
+        @_executeSearchQuery query, (i) => @addToContent i
 
     _datePart: () ->
         return "" unless @withinDate.checked
@@ -252,38 +271,38 @@ class PowerHistoryClass
         listener = new StreamListener channel, callback
         channel.asyncOpen listener, null
 
-    searchWithin: (url, regex) ->
-        @makeRequest url, (data) =>
-            if @_stripHtml(data).search(regex) >= 0
-                @addResult url
-            else
-                @noResultFor url
-
-    addResult: (url) -> @addToContent ['title', url, 'accessCount', 'time']
-
-    noResultFor: (url) ->
-        return
-
     _stripHtml: (text) -> text.replace /<.*?>/g, ''
 
 
-    _executeSearchQuery: (query) ->
+    _executeSearchQuery: (query, fn) ->
         db = Components.classes['@mozilla.org/browser/nav-history-service;1']
             .getService(Components.interfaces.nsPIPlacesDatabase).DBConnection
         sql_stmt = db.createStatement query
-        sql_stmt.executeAsync
+        sql_stmt.executeAsync @resultHandler fn
+
+
+    resultHandler: (fn) ->
+        handler =
             handleResult: (aResultSet) =>
                 row = aResultSet.getNextRow()
                 while row
-                    i = @normalizeRow row
-                    @addToContent [i.title, i.url, i.visit_count,
-                        new Date(i.last_visit_date / 1000)]
+                    fn @normalizeRow row
                     row = aResultSet.getNextRow()
-            handleError: (aError) -> alert("Error: " + aError.message)
+
+            handleError: (aError) -> alert "Error: " + aError.message
 
             handleCompletion: (aReason) =>
-                alert "ok!"
+                @hideIndicator()
                 alert "Query canceled or aborted!" unless @queryFinishedOk aReason
+        return handler
+
+    showIndicator: ->
+        @asyncCount++
+        @searchingIndicator.collapsed = false
+
+    hideIndicator: ->
+        @asyncCount--
+        @searchingIndicator.collapsed = true if @asyncCount is 0
 
     normalizeRow: (row) ->
         ret = {}
