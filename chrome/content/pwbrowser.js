@@ -129,7 +129,9 @@
     return null;
   };
   StreamListener.prototype.queryInterface = function(aIID) {
-    if (aIID.equals(Components.interfaces.nsISupports) || aIID.equals(Components.interfaces.nsIInterfaceRequestor) || aIID.equals(Components.interfaces.nsIChannelEventSink) || aIID.equals(Components.interfaces.nsIProgressEventSink) || aIID.equals(Components.interfaces.nsIHttpEventSink) || aIID.equals(Components.interfaces.nsIStreamListener)) {
+    var ns;
+    ns = Components.interfaces;
+    if (aIID.equals(ns.nsISupports) || aIID.equals(ns.nsIInterfaceRequestor) || aIID.equals(ns.nsIChannelEventSink) || aIID.equals(ns.nsIProgressEventSink) || aIID.equals(ns.nsIHttpEventSink) || aIID.equals(ns.nsIStreamListener)) {
       return this;
     }
     throw Components.results.NS_NOINTERFACE;
@@ -150,14 +152,14 @@
     }, this));
     this.to = this.datepicker();
     this.from = this.datepicker();
-    this.toggler = ui.checkbox({
+    this.withinDate = ui.checkbox({
       label: "Limit by Date"
     }).xcommand(__bind(function() {
       var _j, _len2, _ref2, _result, datePicker;
       _result = []; _ref2 = [this.to, this.from];
       for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
         datePicker = _ref2[_j];
-        _result.push(datePicker.setAttribute('disabled', !this.toggler.checked));
+        _result.push(datePicker.setAttribute('disabled', !this.withinDate.checked));
       }
       return _result;
     }, this));
@@ -192,7 +194,7 @@
     }, this)), ui.checkbox({
       label: "Search Inside Page's content"
     }));
-    dataRange = ui.box().add(this.text('From:'), this.from, this.text('To:'), this.to, this.toggler);
+    dataRange = ui.box().add(this.text('From:'), this.from, this.text('To:'), this.to, this.withinDate);
     searchBox = ui.vbox().add(ui.spacer({
       height: '15'
     }), this.text('Power History'), searchMenu, ui.spacer({
@@ -228,7 +230,7 @@
       Title: 40,
       Url: 40,
       'Visit #': 1,
-      'Last visited': 20
+      'Last visited': 25
     };
     for (column in _ref2) {
       if (!__hasProp.call(_ref2, column)) continue;
@@ -248,56 +250,46 @@
     return this.contentList;
   };
   PowerHistoryClass.prototype.searchHistory = function(queryString) {
-    var _result, db, query, sql_stmt;
-    db = Components.classes['@mozilla.org/browser/nav-history-service;1'].getService(Components.interfaces.nsPIPlacesDatabase).DBConnection;
-    query = "SELECT url, title, visit_count, last_visit_date FROM moz_places\
-        where url like 'http:%' order by visit_count limit 10";
-    sql_stmt = db.createStatement(query);
-    _result = [];
-    while (sql_stmt.executeStep()) {
-      _result.push(this.normalizeRow(sql_stmt.row));
-    }
-    return _result;
-  };
-  PowerHistoryClass.prototype.normalizeRow = function(r) {
-    var ret;
-    ret = {
-      title: r.title,
-      uri: r.url,
-      accessCount: r.visit_count,
-      time: r.last_visit_date
-    };
-    return ret;
-  };
-  PowerHistoryClass.prototype.xsearchHistory = function(queryString) {
-    var _ref2, _result, count, historyService, i, options, query, result, ret;
-    historyService = Components.classes["@mozilla.org/browser/nav-history-service;1"].getService(Components.interfaces.nsINavHistoryService);
-    query = historyService.getNewQuery();
-    query.searchTerms = queryString;
-    options = historyService.getNewQueryOptions();
-    options.sortingMode = options.SORT_BY_VISITCOUNT_DESCENDING;
-    options.maxResults = 10;
-    result = historyService.executeQuery(query, options);
-    result.root.containerOpen = true;
-    count = result.root.childCount;
-    ret = (function() {
-      _result = []; _ref2 = (count - 1);
-      for (i = 0; (0 <= _ref2 ? i <= _ref2 : i >= _ref2); (0 <= _ref2 ? i += 1 : i -= 1)) {
-        _result.push(result.root.getChild(i));
+    var _j, _len2, _ref2, _result, likeParts, likeQuery, query, w, words;
+    words = queryString.split(/\s+/);
+    likeParts = (function() {
+      _result = []; _ref2 = words;
+      for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+        w = _ref2[_j];
+        _result.push(this.urlOrTitleHas(w));
       }
       return _result;
-    })();
-    result.root.containerOpen = false;
-    return ret;
+    }).call(this);
+    likeQuery = likeParts.join(' AND ');
+    query = ("SELECT url, title, visit_count, last_visit_date FROM moz_places\
+        where url like 'http:%' AND (" + (likeQuery) + ") " + (this._datePart()) + " order by last_visit_date\
+        desc limit 100");
+    return this._executeQuery(query);
+  };
+  PowerHistoryClass.prototype._datePart = function() {
+    var fromDate, toDate;
+    if (!(this.withinDate.checked)) {
+      return "";
+    }
+    fromDate = this.from.dateValue.valueOf() * 1000;
+    toDate = this.to.dateValue.valueOf() * 1000;
+    return ("AND (last_visit_date BETWEEN " + (fromDate) + " AND " + (toDate) + ")");
+  };
+  PowerHistoryClass.prototype._likePart = function(col, value) {
+    return "(" + (col) + " LIKE '%" + (value) + "%')";
+  };
+  PowerHistoryClass.prototype.urlOrTitleHas = function(w) {
+    return '(' + this._likePart('url', w) + ' OR ' + this._likePart('title', w) + ')';
   };
   PowerHistoryClass.prototype.search = function() {
-    var _j, _len2, _ref2, _result, i, regex;
-    if (this.searchinput.value.trim() === '') {
+    var _j, _len2, _ref2, _result, i, regex, value;
+    value = this.searchinput.value.trim();
+    if (value === '') {
       return null;
     }
     regex = new RegExp(this.searchinput.value, 'i');
     this.clearContent();
-    _result = []; _ref2 = this.searchHistory(this.searchinput.value);
+    _result = []; _ref2 = this.searchHistory(value);
     for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
       i = _ref2[_j];
       _result.push(this.addToContent([i.title, i.uri, i.accessCount, new Date(i.time / 1000)]));
@@ -319,16 +311,6 @@
       return null;
     }
   };
-  PowerHistoryClass.prototype.getFrom = function(obj) {
-    var _j, _len2, _ref2, _result, arg, args;
-    args = __slice.call(arguments, 1);
-    _result = []; _ref2 = args;
-    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-      arg = _ref2[_j];
-      _result.push(obj[arg]);
-    }
-    return _result;
-  };
   PowerHistoryClass.prototype.makeRequest = function(url, callback) {
     var channel, ioService, listener, uri;
     ioService = Components.classes["@mozilla.org/network/io-service;1"].getService(Components.interfaces.nsIIOService);
@@ -339,7 +321,7 @@
   };
   PowerHistoryClass.prototype.searchWithin = function(url, regex) {
     return this.makeRequest(url, __bind(function(data) {
-      return data.search(regex) >= 0 ? this.addResult(url) : this.noResultFor(url);
+      return this._stripHtml(data).search(regex) >= 0 ? this.addResult(url) : this.noResultFor(url);
     }, this));
   };
   PowerHistoryClass.prototype.addResult = function(url) {
@@ -348,8 +330,28 @@
   PowerHistoryClass.prototype.noResultFor = function(url) {
     return null;
   };
-  PowerHistoryClass.prototype.stripHtml = function(text) {
+  PowerHistoryClass.prototype._stripHtml = function(text) {
     return text.replace(/<.*?>/g, '');
+  };
+  PowerHistoryClass.prototype._executeQuery = function(query) {
+    var _result, db, sql_stmt;
+    db = Components.classes['@mozilla.org/browser/nav-history-service;1'].getService(Components.interfaces.nsPIPlacesDatabase).DBConnection;
+    sql_stmt = db.createStatement(query);
+    _result = [];
+    while (sql_stmt.executeStep()) {
+      _result.push(this._normalizeRow(sql_stmt.row));
+    }
+    return _result;
+  };
+  PowerHistoryClass.prototype._normalizeRow = function(r) {
+    var ret;
+    ret = {
+      title: r.title,
+      uri: r.url,
+      accessCount: r.visit_count,
+      time: r.last_visit_date
+    };
+    return ret;
   };
   this.PowerHistory = new PowerHistoryClass();
 }).call(this);

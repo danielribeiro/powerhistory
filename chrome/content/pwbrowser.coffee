@@ -42,8 +42,6 @@ class CallbackStorage
 
 @_Callbacks = new CallbackStorage()
 
-
-
 for element in _xul_list
     ui[element] = (atr) ->
         ret = document.createElement element
@@ -116,12 +114,13 @@ class StreamListener
 
     #we are faking an XPCOM interface, so we need to implement QI
     queryInterface : (aIID)->
-        if aIID.equals(Components.interfaces.nsISupports) ||
-            aIID.equals(Components.interfaces.nsIInterfaceRequestor) ||
-            aIID.equals(Components.interfaces.nsIChannelEventSink) ||
-            aIID.equals(Components.interfaces.nsIProgressEventSink) ||
-            aIID.equals(Components.interfaces.nsIHttpEventSink) ||
-            aIID.equals(Components.interfaces.nsIStreamListener)
+        ns = Components.interfaces
+        if aIID.equals(ns.nsISupports) ||
+            aIID.equals(ns.nsIInterfaceRequestor) ||
+            aIID.equals(ns.nsIChannelEventSink) ||
+            aIID.equals(ns.nsIProgressEventSink) ||
+            aIID.equals(ns.nsIHttpEventSink) ||
+            aIID.equals(ns.nsIStreamListener)
           return @
         throw Components.results.NS_NOINTERFACE;
 
@@ -143,9 +142,9 @@ class PowerHistoryClass
             , seltype: 'single').xclick((e) => @onClick e)
         @to = @datepicker()
         @from = @datepicker()
-        @toggler = ui.checkbox(label: "Limit by Date").xcommand =>
+        @withinDate = ui.checkbox(label: "Limit by Date").xcommand =>
             for datePicker in [@to, @from]
-                datePicker.setAttribute 'disabled', !@toggler.checked
+                datePicker.setAttribute 'disabled', !@withinDate.checked
         @gBrowser = @constructGBrowser()
 
     constructGBrowser: ->
@@ -163,7 +162,7 @@ class PowerHistoryClass
             ui.checkbox(label: "Search Inside Page's content")
         )
         dataRange = ui.box().add @text('From:'), @from,
-            @text('To:'), @to, @toggler
+            @text('To:'), @to, @withinDate
         searchBox = ui.vbox().add ui.spacer(height: '15'),
             @text('Power History'), searchMenu, ui.spacer(height: '15'), dataRange
         addTo 'pwwindow', searchBox, @createContent()
@@ -184,54 +183,39 @@ class PowerHistoryClass
 
     createContent: ->
         columns = ui.treecols()
-        for column, size of {Title:40, Url:40, 'Visit #':1, 'Last visited':20}
+        for column, size of {Title:40, Url:40, 'Visit #':1, 'Last visited':25}
             columns.add ui.treecol(label: column, flex: size, fixed: false)
             columns.add ui.splitter(width: 0) unless column is 'Last visited'
         @contentList.add columns, @content
         return @contentList
 
     searchHistory: (queryString) ->
-        db = Components.classes['@mozilla.org/browser/nav-history-service;1']
-            .getService(Components.interfaces.nsPIPlacesDatabase).DBConnection
+        words = queryString.split /\s+/
+        likeParts = @urlOrTitleHas(w) for w in words
+        likeQuery =  likeParts.join(' AND ')
         query = "SELECT url, title, visit_count, last_visit_date FROM moz_places
-        where url like 'http:%' order by visit_count limit 10"
-        sql_stmt = db.createStatement query
-        return @normalizeRow(sql_stmt.row) while sql_stmt.executeStep()
+        where url like 'http:%' AND (#{likeQuery}) #{@_datePart()} order by last_visit_date
+        desc limit 100"
+        #alert query
+        return @_executeQuery query
 
-    normalizeRow: (r) ->
-        ret =
-            title: r.title
-            uri: r.url
-            accessCount: r.visit_count
-            time: r.last_visit_date
-        return ret
+    _datePart: () ->
+        return "" unless @withinDate.checked
+        fromDate = @from.dateValue.valueOf() * 1000
+        toDate = @to.dateValue.valueOf() * 1000
+        return "AND (last_visit_date BETWEEN #{fromDate} AND #{toDate})"
 
+    _likePart: (col, value) -> "(#{col} LIKE '%#{value}%')"
 
-    xsearchHistory: (queryString) ->
-        historyService = Components.classes["@mozilla.org/browser/nav-history-service;1"]
-            .getService(Components.interfaces.nsINavHistoryService)
-        query = historyService.getNewQuery()
-        query.searchTerms = queryString
-        options = historyService.getNewQueryOptions()
-        options.sortingMode = options.SORT_BY_VISITCOUNT_DESCENDING
-        options.maxResults = 10
-
-        #execute the query
-        result = historyService.executeQuery(query, options)
-
-        #iterate over the results
-        result.root.containerOpen = true
-        count = result.root.childCount
-        ret = result.root.getChild(i) for i in [0..(count-1)]
-        result.root.containerOpen = false
-        return ret
+    urlOrTitleHas: (w) -> '(' + @_likePart('url', w )+ ' OR ' + @_likePart('title', w) + ')'
 
     search: ->
-        return if @searchinput.value.trim() is ''
+        value = @searchinput.value.trim()
+        return if value is ''
         regex = new RegExp @searchinput.value, 'i'
         # @searchWithin 'http://news.ycombinator.com/item?id=1981547', regex
         @clearContent()
-        for i in @searchHistory(@searchinput.value)
+        for i in @searchHistory(value)
             @addToContent [i.title, i.uri, i.accessCount, new Date(i.time / 1000)]
 
     onClick: (event) ->
@@ -249,8 +233,6 @@ class PowerHistoryClass
         catch error
             return
 
-    getFrom: (obj, args...) -> obj[arg] for arg in args
-
     makeRequest: (url, callback) ->
         ioService = Components.classes["@mozilla.org/network/io-service;1"]
             .getService(Components.interfaces.nsIIOService)
@@ -261,19 +243,32 @@ class PowerHistoryClass
 
     searchWithin: (url, regex) ->
         @makeRequest url, (data) =>
-            if data.search(regex) >= 0
+            if @_stripHtml(data).search(regex) >= 0
                 @addResult url
             else
                 @noResultFor url
-
-
 
     addResult: (url) -> @addToContent ['title', url, 'accessCount', 'time']
 
     noResultFor: (url) ->
         return
 
-    stripHtml: (text) -> text.replace /<.*?>/g, ''
+    _stripHtml: (text) -> text.replace /<.*?>/g, ''
+
+
+    _executeQuery: (query) ->
+        db = Components.classes['@mozilla.org/browser/nav-history-service;1']
+            .getService(Components.interfaces.nsPIPlacesDatabase).DBConnection
+        sql_stmt = db.createStatement query
+        return @_normalizeRow(sql_stmt.row) while sql_stmt.executeStep()
+
+    _normalizeRow: (r) ->
+        ret =
+            title: r.title
+            uri: r.url
+            accessCount: r.visit_count
+            time: r.last_visit_date
+        return ret
 
 
 
