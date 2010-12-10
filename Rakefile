@@ -24,7 +24,7 @@ end
 
 desc "compile all coffeescripts and start watching them"
 task :compile_watch do
-  compileAll
+  compileall
   system "watchr", 'compileall.rb'
 end
 
@@ -33,5 +33,5 @@ task :package do
   require 'fileutils'
   FileUtils.mkpath 'pkg'
   compileall
-  system 'zip', *%w[-r pkg/powerhistory.xpi chrome install.rdf chrome]
+  system 'zip', *%w[-r pkg/powerhistory.xpi chrome.manifest chrome install.rdf chrome]
 end

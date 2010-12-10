@@ -171,6 +171,7 @@ class PowerHistoryClass
         @search() if event.keyCode == KEY_ENTER
 
     constructor: ->
+        @visitedDomains = {}
         @asyncCounter = new AsyncCounter()
         @searchinput = ui.textbox()
         @searchinput.addEventListener('keypress', ((e) => @handleKey(e)), true)
@@ -214,6 +215,7 @@ class PowerHistoryClass
 
 
     clearContent: ->
+        @visitedDomains = {}
         @asyncCounter.reset()
         while @content.hasChildNodes()
             @content.removeChild @content.firstChild
@@ -315,7 +317,14 @@ class PowerHistoryClass
         uri = @ioService.newURI url, null, null
         channel = @ioService.newChannelFromURI uri
         listener = new StreamListener channel, callback
-        channel.asyncOpen listener, null
+        domain = url.split('/')[2]
+        unless @visitedDomains[domain]
+            @visitedDomains[domain] = true
+            channel.asyncOpen listener, null
+            return
+        setTimeout((-> channel.asyncOpen listener, null), 10000)
+        return
+
 
     _stripHtml: (text) -> text.replace /<.*?>/g, ''
 

@@ -189,6 +189,7 @@
   };
   KEY_ENTER = 13;
   PowerHistoryClass = function() {
+    this.visitedDomains = {};
     this.asyncCounter = new AsyncCounter();
     this.searchinput = ui.textbox();
     this.searchinput.addEventListener('keypress', __bind(function(e) {
@@ -259,6 +260,7 @@
     return addTo('pwwindow', menu, this.createContent());
   };
   PowerHistoryClass.prototype.clearContent = function() {
+    this.visitedDomains = {};
     this.asyncCounter.reset();
     while (this.content.hasChildNodes()) {
       this.content.removeChild(this.content.firstChild);
@@ -410,11 +412,20 @@
     return this.gBrowser.addTab(url);
   };
   PowerHistoryClass.prototype.makeRequest = function(url, callback) {
-    var channel, listener, uri;
+    var channel, domain, listener, uri;
     uri = this.ioService.newURI(url, null, null);
     channel = this.ioService.newChannelFromURI(uri);
     listener = new StreamListener(channel, callback);
-    return channel.asyncOpen(listener, null);
+    domain = url.split('/')[2];
+    if (!(this.visitedDomains[domain])) {
+      this.visitedDomains[domain] = true;
+      channel.asyncOpen(listener, null);
+      return null;
+    }
+    setTimeout(function() {
+      return channel.asyncOpen(listener, null);
+    }, 10000);
+    return null;
   };
   PowerHistoryClass.prototype._stripHtml = function(text) {
     return text.replace(/<.*?>/g, '');
