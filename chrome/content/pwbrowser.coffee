@@ -83,7 +83,6 @@ class StreamListener
 
     onStopRequest: (aRequest, aContext, aStatus) ->
         if Components.isSuccessCode(aStatus)
-            #request was successfull
             @mCallbackFunc(@mData)
         else
             @mCallbackFunc(null)
@@ -146,6 +145,7 @@ class PowerHistoryClass
             for datePicker in [@to, @from]
                 datePicker.setAttribute 'disabled', !@withinDate.checked
         @gBrowser = @constructGBrowser()
+        @searchWithinBox = ui.checkbox(label: "Search Inside Page's content", checked: true)
 
     constructGBrowser: ->
         window.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
@@ -159,7 +159,7 @@ class PowerHistoryClass
         searchMenu = ui.box(align: 'center').add(
             @searchinput,
             ui.button(label: 'Search ').xcommand(=> @search()),
-            ui.checkbox(label: "Search Inside Page's content")
+            @searchWithinBox
         )
         dataRange = ui.box().add @text('From:'), @from,
             @text('To:'), @to, @withinDate
@@ -167,8 +167,6 @@ class PowerHistoryClass
             @text('Power History'), searchMenu, ui.spacer(height: '15'), dataRange
         addTo 'pwwindow', searchBox, @createContent()
 
-
-    addTab: (url) -> @gBrowser.addTab url
 
     clearContent: ->
         while @content.hasChildNodes()
@@ -189,15 +187,35 @@ class PowerHistoryClass
         @contentList.add columns, @content
         return @contentList
 
+    search: ->
+        value = @searchinput.value.trim()
+        return if value is ''
+        @clearContent()
+        @searchHistory value
+
+
     searchHistory: (queryString) ->
+        return @withinSearchHistory queryString if @searchWithinBox.checked
+        return @basicSearchHistory queryString
+
+    withinSearchHistory: (queryString, fn) ->
+        words = queryString.split /\s+/
+        query = "SELECT url, title, visit_count, last_visit_date FROM moz_places
+        where url like 'http:%' #{@_datePart()} order by last_visit_date
+        desc"
+        return @_executeSearchQuery query
+
+    basicSearchHistory: (queryString) ->
         words = queryString.split /\s+/
         likeParts = @urlOrTitleHas(w) for w in words
         likeQuery =  likeParts.join(' AND ')
         query = "SELECT url, title, visit_count, last_visit_date FROM moz_places
         where url like 'http:%' AND (#{likeQuery}) #{@_datePart()} order by last_visit_date
-        desc limit 100"
+        desc"
         #alert query
-        return @_executeQuery query
+        #regex = new RegExp @searchinput.value, 'i'
+        # @searchWithin 'http://news.ycombinator.com/item?id=1981547', regex
+        return @_executeSearchQuery query
 
     _datePart: () ->
         return "" unless @withinDate.checked
@@ -209,20 +227,11 @@ class PowerHistoryClass
 
     urlOrTitleHas: (w) -> '(' + @_likePart('url', w )+ ' OR ' + @_likePart('title', w) + ')'
 
-    search: ->
-        value = @searchinput.value.trim()
-        return if value is ''
-        regex = new RegExp @searchinput.value, 'i'
-        # @searchWithin 'http://news.ycombinator.com/item?id=1981547', regex
-        @clearContent()
-        for i in @searchHistory(value)
-            @addToContent [i.title, i.uri, i.accessCount, new Date(i.time / 1000)]
+
 
     onClick: (event) ->
         tree = @contentList
         tbo = tree.treeBoxObject
-
-        # get the row, col and child element at the point
         row = {}
         col = {}
         tbo.getCellAt event.clientX, event.clientY, row, col, {}
@@ -232,6 +241,8 @@ class PowerHistoryClass
             @addTab page
         catch error
             return
+
+    addTab: (url) -> @gBrowser.addTab url
 
     makeRequest: (url, callback) ->
         ioService = Components.classes["@mozilla.org/network/io-service;1"]
@@ -256,20 +267,32 @@ class PowerHistoryClass
     _stripHtml: (text) -> text.replace /<.*?>/g, ''
 
 
-    _executeQuery: (query) ->
+    _executeSearchQuery: (query) ->
         db = Components.classes['@mozilla.org/browser/nav-history-service;1']
             .getService(Components.interfaces.nsPIPlacesDatabase).DBConnection
         sql_stmt = db.createStatement query
-        return @_normalizeRow(sql_stmt.row) while sql_stmt.executeStep()
+        sql_stmt.executeAsync
+            handleResult: (aResultSet) =>
+                row = aResultSet.getNextRow()
+                while row
+                    i = @normalizeRow row
+                    @addToContent [i.title, i.url, i.visit_count,
+                        new Date(i.last_visit_date / 1000)]
+                    row = aResultSet.getNextRow()
+            handleError: (aError) -> alert("Error: " + aError.message)
 
-    _normalizeRow: (r) ->
-        ret =
-            title: r.title
-            uri: r.url
-            accessCount: r.visit_count
-            time: r.last_visit_date
+            handleCompletion: (aReason) =>
+                alert "ok!"
+                alert "Query canceled or aborted!" unless @queryFinishedOk aReason
+
+    normalizeRow: (row) ->
+        ret = {}
+        for attr in ['title', 'url', 'visit_count', 'last_visit_date']
+            ret[attr] = row.getResultByName(attr)
         return ret
 
+    queryFinishedOk: (reason)->
+        reason == Components.interfaces.mozIStorageStatementCallback.REASON_FINISHED
 
 
 @PowerHistory = new PowerHistoryClass()
