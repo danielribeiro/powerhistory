@@ -1,5 +1,5 @@
 (function() {
-  var $, CallbackStorage, KEY_ENTER, PowerHistoryClass, StreamListener, _addAllTo, _i, _len, _ref, _xul_list, addTo, dumpobj, ui;
+  var $, AsyncCounter, CallbackStorage, KEY_ENTER, PowerHistoryClass, StreamListener, _addAllTo, _i, _len, _ref, _xul_list, addTo, dumpobj, ui;
   var __hasProp = Object.prototype.hasOwnProperty, __slice = Array.prototype.slice, __bind = function(func, context) {
     return function(){ return func.apply(context, arguments); };
   };
@@ -136,10 +136,60 @@
     }
     throw Components.results.NS_NOINTERFACE;
   };
+  AsyncCounter = function() {
+    var loadingUrl;
+    this.counterDisplay = ui.description({
+      collapsed: true
+    }).text("(1/1)");
+    loadingUrl = "chrome://global/skin/icons/loading_16.png";
+    this.searchingIndicator = ui.box({
+      collapsed: true
+    }).add(ui.image({
+      src: loadingUrl,
+      maxwidth: 16,
+      maxheight: 16
+    }), this.counterDisplay, ui.description({
+      style: "font: 1.2em bold;"
+    }).text("Searching..."));
+    this.reset();
+    return this;
+  };
+  AsyncCounter.prototype.reset = function() {
+    this.current = 0;
+    this.total = 0;
+    this.done = 0;
+    return (this.counterDisplay.collapsed = true);
+  };
+  AsyncCounter.prototype.display = function() {
+    return this.searchingIndicator;
+  };
+  AsyncCounter.prototype.isDone = function() {
+    return this.current === 0;
+  };
+  AsyncCounter.prototype.updateDisplay = function() {
+    if (this.total <= 1) {
+      return null;
+    }
+    this.counterDisplay.textContent = ("(" + (this.done) + "/" + (this.total) + ")");
+    return (this.counterDisplay.collapsed = false);
+  };
+  AsyncCounter.prototype.inc = function() {
+    this.total++;
+    this.current++;
+    this.updateDisplay();
+    return (this.searchingIndicator.collapsed = false);
+  };
+  AsyncCounter.prototype.dec = function() {
+    this.done++;
+    this.current--;
+    this.updateDisplay();
+    if (this.isDone()) {
+      return (this.searchingIndicator.collapsed = true);
+    }
+  };
   KEY_ENTER = 13;
   PowerHistoryClass = function() {
-    var loadingUrl;
-    this.asyncCount = 0;
+    this.asyncCounter = new AsyncCounter();
     this.searchinput = ui.textbox();
     this.searchinput.addEventListener('keypress', __bind(function(e) {
       return this.handleKey(e);
@@ -169,16 +219,6 @@
     this.searchWithinBox = ui.checkbox({
       label: "Search Inside Page's content"
     });
-    loadingUrl = "chrome://global/skin/icons/loading_16.png";
-    this.searchingIndicator = ui.box({
-      collapsed: true
-    }).add(ui.image({
-      src: loadingUrl,
-      maxwidth: 16,
-      maxheight: 16
-    }), ui.description({
-      style: "font: 1.2em bold;"
-    }).text("Searching..."));
     return this;
   };
   PowerHistoryClass.prototype.text = function(label) {
@@ -213,11 +253,12 @@
     }), dataRange);
     metaSearch = ui.vbox().add(ui.spacer({
       height: '15'
-    }), this.searchingIndicator);
+    }), this.asyncCounter.display());
     menu = ui.box().add(searchBox, metaSearch);
     return addTo('pwwindow', menu, this.createContent());
   };
   PowerHistoryClass.prototype.clearContent = function() {
+    this.asyncCounter.reset();
     while (this.content.hasChildNodes()) {
       this.content.removeChild(this.content.firstChild);
     }
@@ -397,14 +438,10 @@
     return handler;
   };
   PowerHistoryClass.prototype.showIndicator = function() {
-    this.asyncCount++;
-    return (this.searchingIndicator.collapsed = false);
+    return this.asyncCounter.inc();
   };
   PowerHistoryClass.prototype.hideIndicator = function() {
-    this.asyncCount--;
-    if (this.asyncCount === 0) {
-      return (this.searchingIndicator.collapsed = true);
-    }
+    return this.asyncCounter.dec();
   };
   PowerHistoryClass.prototype.normalizeRow = function(row) {
     var _j, _len2, _ref2, attr, ret;

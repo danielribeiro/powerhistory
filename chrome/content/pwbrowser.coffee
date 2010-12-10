@@ -123,6 +123,44 @@ class StreamListener
           return @
         throw Components.results.NS_NOINTERFACE;
 
+class AsyncCounter
+    constructor: ->
+        @counterDisplay = ui.description(collapsed: true).text("(1/1)")
+        loadingUrl = "chrome://global/skin/icons/loading_16.png"
+        @searchingIndicator = ui.box(collapsed: true)
+            .add(ui.image(src: loadingUrl, maxwidth: 16, maxheight: 16),
+                @counterDisplay,
+                ui.description(style: "font: 1.2em bold;").text("Searching..."))
+        @reset()
+
+    reset: ->
+        @current = 0
+        @total = 0
+        @done = 0
+        @counterDisplay.collapsed = true
+
+    display: -> @searchingIndicator
+
+    isDone: -> @current == 0
+
+    updateDisplay: ->
+        return if @total <= 1
+        @counterDisplay.textContent = "(#{@done}/#{@total})"
+        @counterDisplay.collapsed = false
+
+    inc: ->
+        @total++
+        @current++
+        @updateDisplay()
+        @searchingIndicator.collapsed = false
+
+    dec: ->
+        @done++
+        @current--
+        @updateDisplay()
+        @searchingIndicator.collapsed = true if @isDone()
+
+
 KEY_ENTER = 13
 class PowerHistoryClass
     text: (label) -> ui.description().text(label)
@@ -133,7 +171,7 @@ class PowerHistoryClass
         @search() if event.keyCode == KEY_ENTER
 
     constructor: ->
-        @asyncCount = 0
+        @asyncCounter = new AsyncCounter()
         @searchinput = ui.textbox()
         @searchinput.addEventListener('keypress', ((e) => @handleKey(e)), true)
 
@@ -147,10 +185,7 @@ class PowerHistoryClass
                 datePicker.setAttribute 'disabled', !@withinDate.checked
         @gBrowser = @constructGBrowser()
         @searchWithinBox = ui.checkbox(label: "Search Inside Page's content")
-        loadingUrl = "chrome://global/skin/icons/loading_16.png"
-        @searchingIndicator = ui.box(collapsed: true)
-            .add(ui.image(src: loadingUrl, maxwidth: 16, maxheight: 16),
-                ui.description(style: "font: 1.2em bold;").text("Searching..."))
+
 
     constructGBrowser: ->
         window.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
@@ -170,12 +205,13 @@ class PowerHistoryClass
             @text('To:'), @to, @withinDate
         searchBox = ui.vbox().add ui.spacer(height: '15'),
             @text('Power History'), searchMenu, ui.spacer(height: '15'), dataRange
-        metaSearch = ui.vbox().add ui.spacer(height: '15'), @searchingIndicator
+        metaSearch = ui.vbox().add ui.spacer(height: '15'), @asyncCounter.display()
         menu = ui.box().add searchBox, metaSearch
         addTo 'pwwindow', menu, @createContent()
 
 
     clearContent: ->
+        @asyncCounter.reset()
         while @content.hasChildNodes()
             @content.removeChild @content.firstChild
         return
@@ -296,13 +332,10 @@ class PowerHistoryClass
                 alert "Query canceled or aborted!" unless @queryFinishedOk aReason
         return handler
 
-    showIndicator: ->
-        @asyncCount++
-        @searchingIndicator.collapsed = false
+    showIndicator: -> @asyncCounter.inc()
 
-    hideIndicator: ->
-        @asyncCount--
-        @searchingIndicator.collapsed = true if @asyncCount is 0
+    hideIndicator: -> @asyncCounter.dec()
+
 
     normalizeRow: (row) ->
         ret = {}
