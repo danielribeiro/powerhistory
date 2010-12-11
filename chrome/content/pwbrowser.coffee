@@ -167,7 +167,7 @@ class Set
         @add i for i in array if array?
     add: (o) -> @data[o] = o
     remove: (o) -> delete @data[o]
-    include: (o) -> @data[o]?
+    include: (o) -> @data[o]
 
     each: (fn) ->
         for k, v of @data
@@ -283,7 +283,7 @@ class PowerHistoryClass
         regexes = new RegExp(word, 'i') for word in words
         query = "SELECT url, title, visit_count, last_visit_date FROM moz_places
         where url like 'http:%' #{@_datePart()} order by last_visit_date
-        desc limit"
+        desc"
         @_executeSearchQuery query, (row) => @searchForAllWithin row, regexes
 
     searchForAllWithin: (i, regexes) ->

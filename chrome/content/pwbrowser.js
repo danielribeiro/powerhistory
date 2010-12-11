@@ -206,8 +206,7 @@
     return delete this.data[o];
   };
   Set.prototype.include = function(o) {
-    var _ref2;
-    return (typeof (_ref2 = this.data[o]) !== "undefined" && _ref2 !== null);
+    return this.data[o];
   };
   Set.prototype.each = function(fn) {
     var _ref2, k, v;
@@ -391,7 +390,7 @@
     })();
     query = ("SELECT url, title, visit_count, last_visit_date FROM moz_places\
         where url like 'http:%' " + (this._datePart()) + " order by last_visit_date\
-        desc limit");
+        desc");
     return this._executeSearchQuery(query, __bind(function(row) {
       return this.searchForAllWithin(row, regexes);
     }, this));
