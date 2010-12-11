@@ -231,10 +231,6 @@ class PowerHistoryClass
         metaSearch = ui.vbox().add ui.spacer(height: '15'), @asyncCounter.display()
         menu = ui.box().add searchBox, metaSearch
         addTo 'pwwindow', menu, @createContent()
-        @debug = ui.textbox(multiline: true, flex: 15)
-        addTo 'pwwindow', @debug
-
-
 
     clearContent: ->
         @visitedDomains = new Set()
@@ -287,7 +283,7 @@ class PowerHistoryClass
         regexes = new RegExp(word, 'i') for word in words
         query = "SELECT url, title, visit_count, last_visit_date FROM moz_places
         where url like 'http:%' #{@_datePart()} order by last_visit_date
-        desc limit 1"
+        desc limit"
         @_executeSearchQuery query, (row) => @searchForAllWithin row, regexes
 
     searchForAllWithin: (i, regexes) ->
@@ -297,17 +293,9 @@ class PowerHistoryClass
         return @addToContent i if missingRegexes.empty()
         @showIndicator()
         @makeRequest i.url, (data) =>
-            @matchesOnx(@_stripHtml(data), missingRegexes, i.url)
+            @matchesOn(@_stripHtml(data), missingRegexes, i.url)
             @addToContent i if missingRegexes.empty()
             @hideIndicator()
-
-    log: (str) ->
-        @debug.value += str
-
-    matchesOnx: (str, patternSet, url) ->
-        patternSet.each (pattern) =>
-            patternSet.remove pattern if str.search(pattern) >= 0
-        return
 
     matchesOn: (str, patternSet) ->
         patternSet.each (pattern) ->

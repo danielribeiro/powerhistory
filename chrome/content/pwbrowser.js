@@ -299,12 +299,7 @@
       height: '15'
     }), this.asyncCounter.display());
     menu = ui.box().add(searchBox, metaSearch);
-    addTo('pwwindow', menu, this.createContent());
-    this.debug = ui.textbox({
-      multiline: true,
-      flex: 15
-    });
-    return addTo('pwwindow', this.debug);
+    return addTo('pwwindow', menu, this.createContent());
   };
   PowerHistoryClass.prototype.clearContent = function() {
     this.visitedDomains = new Set();
@@ -396,7 +391,7 @@
     })();
     query = ("SELECT url, title, visit_count, last_visit_date FROM moz_places\
         where url like 'http:%' " + (this._datePart()) + " order by last_visit_date\
-        desc limit 1");
+        desc limit");
     return this._executeSearchQuery(query, __bind(function(row) {
       return this.searchForAllWithin(row, regexes);
     }, this));
@@ -411,23 +406,12 @@
     }
     this.showIndicator();
     return this.makeRequest(i.url, __bind(function(data) {
-      this.matchesOnx(this._stripHtml(data), missingRegexes, i.url);
+      this.matchesOn(this._stripHtml(data), missingRegexes, i.url);
       if (missingRegexes.empty()) {
         this.addToContent(i);
       }
       return this.hideIndicator();
     }, this));
-  };
-  PowerHistoryClass.prototype.log = function(str) {
-    return this.debug.value += str;
-  };
-  PowerHistoryClass.prototype.matchesOnx = function(str, patternSet, url) {
-    patternSet.each(__bind(function(pattern) {
-      if (str.search(pattern) >= 0) {
-        return patternSet.remove(pattern);
-      }
-    }, this));
-    return null;
   };
   PowerHistoryClass.prototype.matchesOn = function(str, patternSet) {
     patternSet.each(function(pattern) {
