@@ -1,56 +1,56 @@
 (function() {
-  var $, AsyncCounter, CallbackStorage, KEY_ENTER, PowerHistoryClass, Set, StreamListener, _addAllTo, _i, _len, _ref, _xul_list, addTo, dumpobj, ui;
+  var $, AsyncCounter, CallbackStorage, KEY_ENTER, PowerHistoryClass, Set, StreamListener, _addAllTo, _i, _len, _xul_list, addTo, dumpobj, ui;
   var __hasProp = Object.prototype.hasOwnProperty, __slice = Array.prototype.slice, __bind = function(func, context) {
-    return function(){ return func.apply(context, arguments); };
+    return function() { return func.apply(context, arguments); };
   };
   ui = {};
   _xul_list = ['action', 'arrowscrollbox', 'assign', 'bbox', 'binding', 'bindings', 'box', 'broadcaster', 'broadcasterset', 'button', 'browser', 'checkbox', 'caption', 'colorpicker', 'column', 'columns', 'commandset', 'command', 'conditions', 'content', 'datepicker', 'deck', 'description', 'dialog', 'dialogheader', 'dropmarker', 'editor', 'grid', 'grippy', 'groupbox', 'hbox', 'iframe', 'image', 'key', 'keyset', 'label', 'listbox', 'listcell', 'listcol', 'listcols', 'listhead', 'listheader', 'listitem', 'member', 'menu', 'menubar', 'menuitem', 'menulist', 'menupopup', 'menuseparator', 'notification', 'notificationbox', 'observes', 'overlay', 'page', 'panel', 'param', 'popupset', 'preference', 'preferences', 'prefpane', 'prefwindow', 'progressmeter', 'query', 'queryset', 'radio', 'radiogroup', 'resizer', 'richlistbox', 'richlistitem', 'row', 'rows', 'rule', 'scale', 'script', 'scrollbar', 'scrollbox', 'scrollcorner', 'separator', 'spacer', 'spinbuttons', 'splitter', 'stack', 'statusbar', 'statusbarpanel', 'stringbundle', 'stringbundleset', 'tab', 'tabbrowser', 'tabbox', 'tabpanel', 'tabpanels', 'tabs', 'template', 'textnode', 'textbox', 'timepicker', 'titlebar', 'toolbar', 'toolbarbutton', 'toolbargrippy', 'toolbaritem', 'toolbarpalette', 'toolbarseparator', 'toolbarset', 'toolbarspacer', 'toolbarspring', 'toolbox', 'tooltip', 'tree', 'treecell', 'treechildren', 'treecol', 'treecols', 'treeitem', 'treerow', 'treeseparator', 'triple', 'vbox', 'where', 'window', 'wizard', 'wizardpage'];
   _addAllTo = function(target, args) {
-    var _i, _len, _ref, i;
-    _ref = args;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      i = _ref[_i];
+    var _i, _len, i;
+    for (_i = 0, _len = args.length; _i < _len; _i++) {
+      i = args[_i];
       target.appendChild(i);
     }
     return target;
   };
   dumpobj = function(obj) {
-    var _len, _ref, _result, k, ret, v;
+    var _len, _result, k, ret, v;
     ret = (function() {
-      _result = []; _ref = obj;
-      for (v = 0, _len = _ref.length; v < _len; v++) {
-        k = _ref[v];
-        _result.push("" + (k) + " = " + (v.toString()));
+      _result = [];
+      for (v = 0, _len = obj.length; v < _len; v++) {
+        k = obj[v];
+        _result.push("" + k + " = " + (v.toString()));
       }
       return _result;
     })();
     return ret.join(", ");
   };
-  CallbackStorage = function() {
-    this.counter = 0;
-    return this;
-  };
+  CallbackStorage = (function() {
+    function CallbackStorage() {
+      this.counter = 0;
+      return this;
+    };
+    return CallbackStorage;
+  })();
   CallbackStorage.prototype.addFunction = function(f) {
     var body, mname;
     mname = ("_innerFunction" + (this.counter));
-    body = ("_Callbacks." + (mname) + "(event);");
+    body = ("_Callbacks." + mname + "(event);");
     this.counter++;
     this[mname] = f;
     return body;
   };
   this._Callbacks = new CallbackStorage();
-  _ref = _xul_list;
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+  for (_i = 0, _len = _xul_list.length; _i < _len; _i++) {
     (function() {
-      var element = _ref[_i];
+      var element = _xul_list[_i];
       return (ui[element] = function(atr) {
-        var _ref2, k, ret, v;
+        var k, ret, v;
         ret = document.createElement(element);
-        if (typeof atr !== "undefined" && atr !== null) {
-          _ref2 = atr;
-          for (k in _ref2) {
-            if (!__hasProp.call(_ref2, k)) continue;
-            v = _ref2[k];
+        if (atr != null) {
+          for (k in atr) {
+            if (!__hasProp.call(atr, k)) continue;
+            v = atr[k];
             ret.setAttribute(k, v);
           }
         }
@@ -60,7 +60,7 @@
           return _addAllTo(ret, args);
         };
         ret.text = function(args) {
-          if (!(typeof args !== "undefined" && args !== null)) {
+          if (!(args != null)) {
             return ret.textContent;
           }
           ret.textContent = args;
@@ -86,11 +86,14 @@
     args = __slice.call(arguments, 1);
     return _addAllTo($(name), args);
   };
-  StreamListener = function(_arg, _arg2) {
-    this.mCallbackFunc = _arg2;
-    this.channel = _arg;
-    return this;
-  };
+  StreamListener = (function() {
+    function StreamListener(_arg, _arg2) {
+      this.mCallbackFunc = _arg2;
+      this.channel = _arg;
+      return this;
+    };
+    return StreamListener;
+  })();
   StreamListener.prototype.mData = "";
   StreamListener.prototype.onStartRequest = function(aRequest, aContext) {
     return (this.mData = "");
@@ -120,13 +123,13 @@
     }
   };
   StreamListener.prototype.onProgress = function(aRequest, aContext, aProgress, aProgressMax) {
-    return null;
+    return;
   };
   StreamListener.prototype.onStatus = function(aRequest, aContext, aStatus, aStatusArg) {
-    return null;
+    return;
   };
   StreamListener.prototype.onRedirect = function(aOldChannel, aNewChannel) {
-    return null;
+    return;
   };
   StreamListener.prototype.queryInterface = function(aIID) {
     var ns;
@@ -136,24 +139,27 @@
     }
     throw Components.results.NS_NOINTERFACE;
   };
-  AsyncCounter = function() {
-    var loadingUrl;
-    this.counterDisplay = ui.description({
-      collapsed: true
-    }).text("(1/1)");
-    loadingUrl = "chrome://global/skin/icons/loading_16.png";
-    this.searchingIndicator = ui.box({
-      collapsed: true
-    }).add(ui.image({
-      src: loadingUrl,
-      maxwidth: 16,
-      maxheight: 16
-    }), this.counterDisplay, ui.description({
-      style: "font: 1.2em bold;"
-    }).text("Searching..."));
-    this.reset();
-    return this;
-  };
+  AsyncCounter = (function() {
+    function AsyncCounter() {
+      var loadingUrl;
+      this.counterDisplay = ui.description({
+        collapsed: true
+      }).text("(1/1)");
+      loadingUrl = "chrome://global/skin/icons/loading_16.png";
+      this.searchingIndicator = ui.box({
+        collapsed: true
+      }).add(ui.image({
+        src: loadingUrl,
+        maxwidth: 16,
+        maxheight: 16
+      }), this.counterDisplay, ui.description({
+        style: "font: 1.2em bold;"
+      }).text("Searching..."));
+      this.reset();
+      return this;
+    };
+    return AsyncCounter;
+  })();
   AsyncCounter.prototype.reset = function() {
     this.current = 0;
     this.total = 0;
@@ -168,7 +174,7 @@
   };
   AsyncCounter.prototype.updateDisplay = function() {
     if (this.total <= 1) {
-      return null;
+      return;
     }
     this.counterDisplay.textContent = ("(" + (this.done) + "/" + (this.total) + ")");
     return (this.counterDisplay.collapsed = false);
@@ -183,22 +189,22 @@
     this.done++;
     this.current--;
     this.updateDisplay();
-    if (this.isDone()) {
-      return (this.searchingIndicator.collapsed = true);
-    }
+    return this.isDone() ? (this.searchingIndicator.collapsed = true) : undefined;
   };
-  Set = function(array) {
-    var _j, _len2, _ref2, i;
-    this.data = {};
-    if (typeof array !== "undefined" && array !== null) {
-      _ref2 = array;
-      for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-        i = _ref2[_j];
-        this.add(i);
+  Set = (function() {
+    function Set(array) {
+      var _j, _len2, i;
+      this.data = {};
+      if (array != null) {
+        for (_j = 0, _len2 = array.length; _j < _len2; _j++) {
+          i = array[_j];
+          this.add(i);
+        }
       }
-    }
-    return this;
-  };
+      return this;
+    };
+    return Set;
+  })();
   Set.prototype.add = function(o) {
     return (this.data[o] = o);
   };
@@ -209,61 +215,61 @@
     return this.data[o];
   };
   Set.prototype.each = function(fn) {
-    var _ref2, k, v;
-    _ref2 = this.data;
-    for (k in _ref2) {
-      if (!__hasProp.call(_ref2, k)) continue;
-      v = _ref2[k];
+    var _ref, k, v;
+    for (k in _ref = this.data) {
+      if (!__hasProp.call(_ref, k)) continue;
+      v = _ref[k];
       fn(v);
     }
-    return null;
+    return;
   };
   Set.prototype.empty = function() {
-    var _j, _ref2, k;
-    _ref2 = this.data;
-    for (k in _ref2) {
-      if (!__hasProp.call(_ref2, k)) continue;
-      _j = _ref2[k];
+    var _ref, k;
+    for (k in _ref = this.data) {
+      if (!__hasProp.call(_ref, k)) continue;
       return false;
     }
     return true;
   };
   KEY_ENTER = 13;
-  PowerHistoryClass = function() {
-    this.visitedDomains = new Set();
-    this.asyncCounter = new AsyncCounter();
-    this.searchinput = ui.textbox();
-    this.searchinput.addEventListener('keypress', __bind(function(e) {
-      return this.handleKey(e);
-    }, this), true);
-    this.content = ui.treechildren();
-    this.contentList = ui.tree({
-      hidecolumnpicker: true,
-      flex: 1,
-      seltype: 'single'
-    }).xclick(__bind(function(e) {
-      return this.onClick(e);
-    }, this));
-    this.to = this.datepicker();
-    this.from = this.datepicker();
-    this.withinDate = ui.checkbox({
-      label: "Limit by Date"
-    }).xcommand(__bind(function() {
-      var _j, _len2, _ref2, _result, datePicker;
-      _result = []; _ref2 = [this.to, this.from];
-      for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-        datePicker = _ref2[_j];
-        _result.push(datePicker.setAttribute('disabled', !this.withinDate.checked));
-      }
-      return _result;
-    }, this));
-    this.gBrowser = this.constructGBrowser();
-    this.searchWithinBox = ui.checkbox({
-      label: "Search Inside Page's content"
-    });
-    this.ioService = Components.classes["@mozilla.org/network/io-service;1"].getService(Components.interfaces.nsIIOService);
-    return this;
-  };
+  PowerHistoryClass = (function() {
+    function PowerHistoryClass() {
+      this.visitedDomains = new Set();
+      this.asyncCounter = new AsyncCounter();
+      this.searchinput = ui.textbox();
+      this.searchinput.addEventListener('keypress', __bind(function(e) {
+        return this.handleKey(e);
+      }, this), true);
+      this.content = ui.treechildren();
+      this.contentList = ui.tree({
+        hidecolumnpicker: true,
+        flex: 1,
+        seltype: 'single'
+      }).xclick(__bind(function(e) {
+        return this.onClick(e);
+      }, this));
+      this.to = this.datepicker();
+      this.from = this.datepicker();
+      this.withinDate = ui.checkbox({
+        label: "Limit by Date"
+      }).xcommand(__bind(function() {
+        var _j, _len2, _ref, _result, datePicker;
+        _result = [];
+        for (_j = 0, _len2 = (_ref = [this.to, this.from]).length; _j < _len2; _j++) {
+          datePicker = _ref[_j];
+          _result.push(datePicker.setAttribute('disabled', !this.withinDate.checked));
+        }
+        return _result;
+      }, this));
+      this.gBrowser = this.constructGBrowser();
+      this.searchWithinBox = ui.checkbox({
+        label: "Search Inside Page's content"
+      });
+      this.ioService = Components.classes["@mozilla.org/network/io-service;1"].getService(Components.interfaces.nsIIOService);
+      return this;
+    };
+    return PowerHistoryClass;
+  })();
   PowerHistoryClass.prototype.text = function(label) {
     return ui.description().text(label);
   };
@@ -274,9 +280,7 @@
     });
   };
   PowerHistoryClass.prototype.handleKey = function(event) {
-    if (event.keyCode === KEY_ENTER) {
-      return this.search();
-    }
+    return event.keyCode === KEY_ENTER ? this.search() : undefined;
   };
   PowerHistoryClass.prototype.constructGBrowser = function() {
     return window.QueryInterface(Components.interfaces.nsIInterfaceRequestor).getInterface(Components.interfaces.nsIWebNavigation).QueryInterface(Components.interfaces.nsIDocShellTreeItem).rootTreeItem.QueryInterface(Components.interfaces.nsIInterfaceRequestor).getInterface(Components.interfaces.nsIDOMWindow).gBrowser;
@@ -306,33 +310,31 @@
     while (this.content.hasChildNodes()) {
       this.content.removeChild(this.content.firstChild);
     }
-    return null;
+    return;
   };
   PowerHistoryClass.prototype.addToContent = function(i) {
-    var _j, _len2, _ref2, newRow, value;
+    var _j, _len2, _ref, newRow, value;
     newRow = ui.treerow();
-    _ref2 = [i.title, i.url, i.visit_count, new Date(i.last_visit_date / 1000)];
-    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-      value = _ref2[_j];
+    for (_j = 0, _len2 = (_ref = [i.title, i.url, i.visit_count, new Date(i.last_visit_date / 1000)]).length; _j < _len2; _j++) {
+      value = _ref[_j];
       newRow.add(ui.treecell({
         label: value
       }));
     }
     this.content.add(ui.treeitem().add(newRow));
-    return null;
+    return;
   };
   PowerHistoryClass.prototype.createContent = function() {
-    var _ref2, column, columns, size;
+    var _ref, column, columns, size;
     columns = ui.treecols();
-    _ref2 = {
+    for (column in _ref = {
       Title: 40,
       Url: 40,
       'Visit #': 1,
       'Last visited': 25
-    };
-    for (column in _ref2) {
-      if (!__hasProp.call(_ref2, column)) continue;
-      size = _ref2[column];
+    }) {
+      if (!__hasProp.call(_ref, column)) continue;
+      size = _ref[column];
       columns.add(ui.treecol({
         label: column,
         flex: size,
@@ -351,7 +353,7 @@
     var value;
     value = this.searchinput.value.trim();
     if (value === '') {
-      return null;
+      return;
     }
     this.clearContent();
     this.showIndicator();
@@ -373,24 +375,22 @@
     return (result = prompts.confirmCheck(null, info, "Are you sure?", "Don't ask again", check));
   };
   PowerHistoryClass.prototype.withinSearchHistory = function(words, fn) {
-    var _j, _len2, _ref2, _result, query, regexes, word;
-    if (!(this.withinDate.checked)) {
-      if (!(this.confirmBigData())) {
+    var _j, _len2, _result, query, regexes, word;
+    if (!this.withinDate.checked) {
+      if (!this.confirmBigData()) {
         this.hideIndicator();
-        return null;
+        return;
       }
     }
     regexes = (function() {
-      _result = []; _ref2 = words;
-      for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-        word = _ref2[_j];
+      _result = [];
+      for (_j = 0, _len2 = words.length; _j < _len2; _j++) {
+        word = words[_j];
         _result.push(new RegExp(word, 'i'));
       }
       return _result;
     })();
-    query = ("SELECT url, title, visit_count, last_visit_date FROM moz_places\
-        where url like 'http:%' " + (this._datePart()) + " order by last_visit_date\
-        desc");
+    query = ("SELECT url, title, visit_count, last_visit_date FROM moz_places        where url like 'http:%' " + (this._datePart()) + " order by last_visit_date        desc");
     return this._executeSearchQuery(query, __bind(function(row) {
       return this.searchForAllWithin(row, regexes);
     }, this));
@@ -414,41 +414,37 @@
   };
   PowerHistoryClass.prototype.matchesOn = function(str, patternSet) {
     patternSet.each(function(pattern) {
-      if (str.search(pattern) >= 0) {
-        return patternSet.remove(pattern);
-      }
+      return str.search(pattern) >= 0 ? patternSet.remove(pattern) : undefined;
     });
-    return null;
+    return;
   };
   PowerHistoryClass.prototype.basicSearchHistory = function(words) {
-    var _j, _len2, _ref2, _result, likeParts, likeQuery, query, w;
+    var _j, _len2, _result, likeParts, likeQuery, query, w;
     likeParts = (function() {
-      _result = []; _ref2 = words;
-      for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-        w = _ref2[_j];
+      _result = [];
+      for (_j = 0, _len2 = words.length; _j < _len2; _j++) {
+        w = words[_j];
         _result.push(this.urlOrTitleHas(w));
       }
       return _result;
     }).call(this);
     likeQuery = likeParts.join(' AND ');
-    query = ("SELECT url, title, visit_count, last_visit_date FROM moz_places\
-        where url like 'http:%' AND (" + (likeQuery) + ") " + (this._datePart()) + " order by last_visit_date\
-        desc");
+    query = ("SELECT url, title, visit_count, last_visit_date FROM moz_places        where url like 'http:%' AND (" + likeQuery + ") " + (this._datePart()) + " order by last_visit_date        desc");
     return this._executeSearchQuery(query, __bind(function(i) {
       return this.addToContent(i);
     }, this));
   };
   PowerHistoryClass.prototype._datePart = function() {
     var fromDate, toDate;
-    if (!(this.withinDate.checked)) {
+    if (!this.withinDate.checked) {
       return "";
     }
     fromDate = this.from.dateValue.valueOf() * 1000;
     toDate = this.to.dateValue.valueOf() * 1000;
-    return ("AND (last_visit_date BETWEEN " + (fromDate) + " AND " + (toDate) + ")");
+    return ("AND (last_visit_date BETWEEN " + fromDate + " AND " + toDate + ")");
   };
   PowerHistoryClass.prototype._likePart = function(col, value) {
-    return "(" + (col) + " LIKE '%" + (value) + "%')";
+    return "(" + col + " LIKE '%" + value + "%')";
   };
   PowerHistoryClass.prototype.urlOrTitleHas = function(w) {
     return '(' + this._likePart('url', w) + ' OR ' + this._likePart('title', w) + ')';
@@ -465,7 +461,7 @@
       page = tree.view.getCellText(row.value, urlcolumn);
       return this.addTab(page);
     } catch (error) {
-      return null;
+      return;
     }
   };
   PowerHistoryClass.prototype.addTab = function(url) {
@@ -477,15 +473,15 @@
     channel = this.ioService.newChannelFromURI(uri);
     listener = new StreamListener(channel, callback);
     domain = url.split('/')[2];
-    if (!(this.visitedDomains.include(domain))) {
+    if (!this.visitedDomains.include(domain)) {
       this.visitedDomains.add(domain);
       channel.asyncOpen(listener, null);
-      return null;
+      return;
     }
     setTimeout(function() {
       return channel.asyncOpen(listener, null);
     }, this.politeTimeout());
-    return null;
+    return;
   };
   PowerHistoryClass.prototype.politeTimeout = function() {
     return 10000;
@@ -519,9 +515,7 @@
       },
       handleCompletion: __bind(function(aReason) {
         this.hideIndicator();
-        if (!(this.queryFinishedOk(aReason))) {
-          return alert("Query canceled or aborted!");
-        }
+        return !this.queryFinishedOk(aReason) ? alert("Query canceled or aborted!") : undefined;
       }, this)
     };
     return handler;
@@ -533,11 +527,10 @@
     return this.asyncCounter.dec();
   };
   PowerHistoryClass.prototype.normalizeRow = function(row) {
-    var _j, _len2, _ref2, attr, ret;
+    var _j, _len2, _ref, attr, ret;
     ret = {};
-    _ref2 = ['title', 'url', 'visit_count', 'last_visit_date'];
-    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-      attr = _ref2[_j];
+    for (_j = 0, _len2 = (_ref = ['title', 'url', 'visit_count', 'last_visit_date']).length; _j < _len2; _j++) {
+      attr = _ref[_j];
       ret[attr] = row.getResultByName(attr);
     }
     return ret;
