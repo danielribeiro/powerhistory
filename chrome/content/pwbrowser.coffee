@@ -1,23 +1,23 @@
 ui = {}
 _xul_list =
     ['action', 'arrowscrollbox', 'assign', 'bbox', 'binding', 'bindings', 'box', 'broadcaster',
-'broadcasterset', 'button', 'browser', 'checkbox', 'caption', 'colorpicker', 'column',
-'columns', 'commandset', 'command', 'conditions', 'content', 'datepicker', 'deck',
-'description', 'dialog', 'dialogheader', 'dropmarker', 'editor', 'grid', 'grippy',
-'groupbox', 'hbox', 'iframe', 'image', 'key', 'keyset', 'label', 'listbox', 'listcell',
-'listcol', 'listcols', 'listhead', 'listheader', 'listitem', 'member', 'menu', 'menubar',
-'menuitem', 'menulist', 'menupopup', 'menuseparator', 'notification', 'notificationbox',
-'observes', 'overlay', 'page', 'panel', 'param', 'popupset', 'preference', 'preferences',
-'prefpane', 'prefwindow', 'progressmeter', 'query', 'queryset', 'radio', 'radiogroup',
-'resizer', 'richlistbox', 'richlistitem', 'row', 'rows', 'rule', 'scale', 'script',
-'scrollbar', 'scrollbox', 'scrollcorner', 'separator', 'spacer', 'spinbuttons',
-'splitter', 'stack', 'statusbar', 'statusbarpanel', 'stringbundle', 'stringbundleset',
-'tab', 'tabbrowser', 'tabbox', 'tabpanel', 'tabpanels', 'tabs', 'template', 'textnode',
-'textbox', 'timepicker', 'titlebar', 'toolbar', 'toolbarbutton', 'toolbargrippy',
-'toolbaritem', 'toolbarpalette', 'toolbarseparator', 'toolbarset', 'toolbarspacer',
-'toolbarspring', 'toolbox', 'tooltip', 'tree', 'treecell', 'treechildren', 'treecol',
-'treecols', 'treeitem', 'treerow', 'treeseparator', 'triple', 'vbox', 'where',
-'window', 'wizard', 'wizardpage']
+    'broadcasterset', 'button', 'browser', 'checkbox', 'caption', 'colorpicker', 'column',
+    'columns', 'commandset', 'command', 'conditions', 'content', 'datepicker', 'deck',
+    'description', 'dialog', 'dialogheader', 'dropmarker', 'editor', 'grid', 'grippy',
+    'groupbox', 'hbox', 'iframe', 'image', 'key', 'keyset', 'label', 'listbox', 'listcell',
+    'listcol', 'listcols', 'listhead', 'listheader', 'listitem', 'member', 'menu', 'menubar',
+    'menuitem', 'menulist', 'menupopup', 'menuseparator', 'notification', 'notificationbox',
+    'observes', 'overlay', 'page', 'panel', 'param', 'popupset', 'preference', 'preferences',
+    'prefpane', 'prefwindow', 'progressmeter', 'query', 'queryset', 'radio', 'radiogroup',
+    'resizer', 'richlistbox', 'richlistitem', 'row', 'rows', 'rule', 'scale', 'script',
+    'scrollbar', 'scrollbox', 'scrollcorner', 'separator', 'spacer', 'spinbuttons',
+    'splitter', 'stack', 'statusbar', 'statusbarpanel', 'stringbundle', 'stringbundleset',
+    'tab', 'tabbrowser', 'tabbox', 'tabpanel', 'tabpanels', 'tabs', 'template', 'textnode',
+    'textbox', 'timepicker', 'titlebar', 'toolbar', 'toolbarbutton', 'toolbargrippy',
+    'toolbaritem', 'toolbarpalette', 'toolbarseparator', 'toolbarset', 'toolbarspacer',
+    'toolbarspring', 'toolbox', 'tooltip', 'tree', 'treecell', 'treechildren', 'treecol',
+    'treecols', 'treeitem', 'treerow', 'treeseparator', 'triple', 'vbox', 'where',
+    'window', 'wizard', 'wizardpage']
 
 
 _addAllTo = (target, args) ->
@@ -25,7 +25,7 @@ _addAllTo = (target, args) ->
     return target
 
 dumpobj = (obj) ->
-    ret = "#{k} = #{v.toString()}" for k, v in obj
+    ret = ("#{k} = #{v.toString()}" for k, v in obj)
     return ret.join ", "
 
 # To allows us to use functions instead of strings on commands and clicks handlers
@@ -40,10 +40,10 @@ class CallbackStorage
         return body
 
 
-@_Callbacks = new CallbackStorage()
+window._Callbacks = new CallbackStorage()
 
-for element in _xul_list
-    ui[element] = (atr) ->
+_createElement = (element) ->
+    ui[element] = (atr) -> 
         ret = document.createElement element
         ret.setAttribute(k, v) for k, v of atr if atr?
         ret.add = (args...) -> _addAllTo ret, args
@@ -57,7 +57,10 @@ for element in _xul_list
         ret.xcommand = (func) ->
             ret.setAttribute 'oncommand', _Callbacks.addFunction(func)
             return ret
-        return ret
+        return ret    
+
+for element in _xul_list
+    _createElement(element)
 
 
 $ = (name) -> document.getElementById name
@@ -280,7 +283,7 @@ class PowerHistoryClass
             unless @confirmBigData()
                 @hideIndicator()
                 return
-        regexes = new RegExp(word, 'i') for word in words
+        regexes = (new RegExp(word, 'i') for word in words)
         query = "SELECT url, title, visit_count, last_visit_date FROM moz_places
         where url like 'http:%' #{@_datePart()} order by last_visit_date
         desc"
@@ -303,7 +306,7 @@ class PowerHistoryClass
         return
 
     basicSearchHistory: (words) ->
-        likeParts = @urlOrTitleHas(w) for w in words
+        likeParts = (@urlOrTitleHas(w) for w in words)
         likeQuery =  likeParts.join(' AND ')
         query = "SELECT url, title, visit_count, last_visit_date FROM moz_places
         where url like 'http:%' AND (#{likeQuery}) #{@_datePart()} order by last_visit_date
@@ -393,4 +396,4 @@ class PowerHistoryClass
         reason == Components.interfaces.mozIStorageStatementCallback.REASON_FINISHED
 
 
-@PowerHistory = new PowerHistoryClass()
+window.PowerHistory = new PowerHistoryClass()
