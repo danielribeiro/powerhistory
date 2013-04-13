@@ -5,7 +5,7 @@
     <em:id>powerhistory@danrbr.com</em:id>
     <em:type>2</em:type>
     <em:name>Power History</em:name>
-    <em:version>0.2</em:version>
+    <em:version>0.3</em:version>
     <em:creator>Daniel Ribeiro</em:creator>
     <em:description>Power history</em:description>
     <em:homepageURL>https://github.com/danielribeiro/powerhistory/</em:homepageURL>
@@ -14,7 +14,7 @@
       <Description>
         <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id> <!-- Firefox -->
         <em:minVersion>7</em:minVersion>
-        <em:maxVersion>13.*</em:maxVersion>
+        <em:maxVersion>30.*</em:maxVersion>
       </Description>
     </em:targetApplication>
 
