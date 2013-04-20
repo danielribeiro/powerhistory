@@ -1,4 +1,0 @@
-content  powerhistory         chrome/content/
-locale   powerhistory  en-US  chrome/locale/en-US/
-
-overlay  chrome://browser/content/browser.xul chrome://powerhistory/content/ph_browser.xul
