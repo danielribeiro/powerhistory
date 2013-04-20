@@ -7,6 +7,8 @@ the content of the urls on the history, and limiting by dates.
 **Usage:** From menu Tools -> Power History, and opens a page where you can define
 your search options
 
+![How it looks](https://raw.github.com/danielribeiro/powerhistory/5420ed731a77cba7f3d7a2fc7ce8f9299c1c3715/powerhistory.png)
+
 Known limitations: does not request iframes and frames inside the pages.
 
 
