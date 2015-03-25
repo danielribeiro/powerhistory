@@ -3,7 +3,6 @@ require 'bundler/setup'
 require 'rake'
 require 'rake/clean'
 require 'rake/gempackagetask'
-require 'rake/rdoctask'
 require 'rake/testtask'
 require 'spec/rake/spectask'
 
@@ -13,6 +12,7 @@ task :default => [:compile_watch]
 #################################
 #$LOAD_PATH.unshift File.join(File.dirname(__FILE__),'lib')
 require 'pp'
+$: << "."
 
 def compileall
   require 'coffeecompiler'
